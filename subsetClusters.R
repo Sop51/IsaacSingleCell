@@ -2,6 +2,7 @@
 library(ggpubr)
 library(ggplot2)
 library(ggsignif)
+library(harmony)
 
 # -------------------- hepatocyte subcluster ----------------------- #
 # first pull out the hepatocyte
@@ -26,7 +27,7 @@ hep <- RunUMAP(hep, dims = 1:20)
 # plot!!
 DimPlot(hep, reduction = "umap", group.by = 'timepoint')
 UMAPPlot(hep)
-FeaturePlot(hep, features = 'anxa2a', group_by = 'timepoint')
+FeaturePlot(hep, features = 'ezh2')
 
 # marker selection
 cluster0.hep <- FindMarkers(hep, ident.1 = 0)
@@ -38,14 +39,18 @@ cluster5.hep <- FindMarkers(hep, ident.1 = 5)
 cluster6.hep <- FindMarkers(hep, ident.1 = 6)
 cluster7.hep <- FindMarkers(hep, ident.1 = 7)
 
-VlnPlot(hep, features = "anxa2a", group.by = "timepoint")
+VlnPlot(hep, features = "ezh2", group.by = "timepoint")
 # ---------------- BECS ----------------------- #
 # first pull out the hepatocyte
 bec <- subset(x = zf, idents = "Biliary Epithelial Cell")
+# use RNA assat for normalization and selecting variable features
+DefaultAssay(end) <- "RNA"
 # normalize the data
 bec <- NormalizeData(bec)
 # find variable features
 bec <- FindVariableFeatures(bec, selection.method = "vst", nfeatures = 2000)
+# change assay to integrated for the latter steps
+DefaultAssay(mac) <- "integrated"
 # scale the data on these top variable features
 bec <- ScaleData(bec)
 # run pca
@@ -96,8 +101,179 @@ neutrophil <- RunUMAP(neutrophil, dims = 1:20)
 DimPlot(neutrophil, reduction = "umap", group.by = "timepoint")
 VlnPlot(neutrophil, features = 'myd88', group.by = "timepoint")
 
+# marker selection
+cluster0.neutrophil <- FindMarkers(neutrophil, ident.1 = 0)
+cluster1.neutrophil <- FindMarkers(neutrophil, ident.1 = 1)
+cluster2.neutrophil <- FindMarkers(neutrophil, ident.1 = 2)
+cluster3.neutrophil <- FindMarkers(neutrophil, ident.1 = 3)
+cluster4.neutrophil <- FindMarkers(neutrophil, ident.1 = 4)
+cluster5.neutrophil <- FindMarkers(neutrophil, ident.1 = 5)
+cluster6.neutrophil <- FindMarkers(neutrophil, ident.1 = 6)
+cluster7.neutrophil <- FindMarkers(neutrophil, ident.1 = 7)
+
+# ----------------- Endothelial Cell Subcluster ------------------ #
+# first pull out the endothelial cells
+end <- subset(x = zf, idents = "Endothelial Cell")
+# use RNA assat for normalization and selecting variable features
+DefaultAssay(end) <- "RNA"
+# remove genes expressed in small num of cells to avoid simpleLoess warning
+gene_counts <- rowSums(as.matrix(GetAssayData(end, slot = "counts")) > 0)
+min_cells <- 0.03 * ncol(end)  # 3% of total cells
+end <- subset(end, features = names(gene_counts[gene_counts > min_cells]))
+# normalize the data
+end <- NormalizeData(end)
+# find variable features
+end <- FindVariableFeatures(end, selection.method = "vst", nfeatures = 2000)
+# change assay to integrated for the latter steps
+DefaultAssay(mac) <- "integrated"
+# scale the data on these top variable features
+end <- ScaleData(end)
+# run pca
+end <- RunPCA(end, npcs = 30)
+# create the elbow plot to determine pcs to use going forward
+ElbowPlot(end)
+# construct a KNN graph - take dimensionality previously determined
+end <- FindNeighbors(end, dims = 1:20)
+# cluster the cells 
+end <- FindClusters(end, resolution = 0.4)
+# run umap - only displays LOCAL relationships
+end <- RunUMAP(end, dims = 1:20)
+
+# plot!!
+x <- DimPlot(end, reduction = "umap")
+y <- DimPlot(end, reduction = "umap", group.by = "timepoint")
+
+x | y
+
+# ------------------ Macrophage cell cluster ---------------------- #
+# first pull out the macrophage cells
+mac <- subset(x = zf, idents = "Macrophage")
+# use RNA assat for normalization and selecting variable features
+DefaultAssay(mac) <- "RNA"
+mac <- NormalizeData(mac)
+# find variable features
+mac <- FindVariableFeatures(mac, selection.method = "vst", nfeatures = 2000)
+# change assay to integrated for the latter steps
+DefaultAssay(mac) <- "integrated"
+# scale the data on these top variable features
+mac <- ScaleData(mac)
+# run pca
+mac <- RunPCA(mac, npcs = 30)
+# create the elbow plot to determine pcs to use going forward
+ElbowPlot(mac)
+# construct a KNN graph - take dimensionality previously determined
+mac <- FindNeighbors(mac, dims = 1:20)
+# cluster the cells 
+mac <- FindClusters(mac, resolution = 0.4)
+# run umap - only displays LOCAL relationships
+mac <- RunUMAP(mac, dims = 1:20)
+
+# plot!!
+x <- DimPlot(mac, reduction = "umap", group.by = "orig.ident")
+y <- DimPlot(mac, reduction = "umap", group.by = "timepoint")
+
+x | y
+
+# ------------------------ Lymphocyte subcluster -------------------------- #
+# first pull out the lymphocyte cells
+lymph <- subset(x = zf, idents = "Lymphocyte")
+# use RNA assat for normalization and selecting variable features
+DefaultAssay(lymph) <- "RNA"
+lymph <- NormalizeData(lymph)
+# find variable features
+lymph <- FindVariableFeatures(lymph, selection.method = "vst", nfeatures = 2000)
+# change assay to integrated for the latter steps
+DefaultAssay(lymph) <- "integrated"
+# scale the data on these top variable features
+lymph <- ScaleData(lymph)
+# run pca
+lymph <- RunPCA(lymph, npcs = 30)
+# create the elbow plot to determine pcs to use going forward
+ElbowPlot(lymph)
+# construct a KNN graph - take dimensionality previously determined
+lymph <- FindNeighbors(lymph, dims = 1:15)
+# cluster the cells 
+lymph <- FindClusters(lymph, resolution = 0.4)
+# run umap - only displays LOCAL relationships
+lymph <- RunUMAP(lymph, dims = 1:20)
+
+# plot!!
+x <- DimPlot(lymph, reduction = "umap")
+y <- DimPlot(lymph, reduction = "umap", group.by = "timepoint")
+
+x | y
+
+# ---------------------- apln+ cell cluster ------------------------------ #
+# first pull out the apln+ cells
+apln <- subset(x = zf, idents = "apln+")
+# use RNA assat for normalization and selecting variable features
+DefaultAssay(apln) <- "RNA"
+# remove genes expressed in small num of cells to avoid simpleLoess warning
+gene_counts <- rowSums(as.matrix(GetAssayData(apln, slot = "counts")) > 0)
+min_cells <- 0.01 * ncol(apln)  # 1% of total cells
+apln <- subset(apln, features = names(gene_counts[gene_counts > min_cells]))
+apln <- NormalizeData(apln)
+# find variable features
+apln <- FindVariableFeatures(apln, selection.method = "vst", nfeatures = 2000)
+# change assay to integrated for the latter steps
+DefaultAssay(apln) <- "integrated"
+# scale the data on these top variable features
+apln <- ScaleData(apln)
+# run pca
+apln <- RunPCA(apln, npcs = 30)
+# create the elbow plot to determine pcs to use going forward
+ElbowPlot(apln)
+# construct a KNN graph - take dimensionality previously determined
+apln <- FindNeighbors(apln, dims = 1:18)
+# cluster the cells 
+apln <- FindClusters(apln, resolution = 0.2)
+# run umap - only displays LOCAL relationships
+apln <- RunUMAP(apln, dims = 1:18)
+
+# plot!!
+x <- DimPlot(apln, reduction = "umap", group.by = 'orig.ident')
+y <- DimPlot(apln, reduction = "umap", group.by = "timepoint")
+
+x | y
+
+DefaultAssay(apln) <- "RNA"
+zero <- FindMarkers(apln, ident.1 = 0, only.pos = TRUE)
+one <- FindMarkers(apln, ident.1 = 1, only.pos = TRUE)
+# ----------- code to produce a box plot for a cell type across time points ------------- #
+celltype <- bec
+gene <- 'spint2'
+
+DefaultAssay(celltype) <- 'RNA'
+# subset to only include cells expressing the gene
+non_zero <- subset(celltype, subset = spint2 > 0)
+
+# convert to a data frame for ggplot
+data <- FetchData(non_zero, vars = c(gene, "timepoint"))
+
+# create a box plot
+ggplot(data, aes(x = timepoint, y = spint2, fill = timepoint)) +
+  geom_boxplot(alpha = 0.7, outlier.shape = NA, color = "black", linewidth = 0.3) + 
+  geom_jitter(width = 0.2, size = 1, alpha = 0.6, color = "black") +               
+  scale_fill_manual(values = c("#8ECAE6", 
+                               "#d6d3cc", "#ffefd3", "#ffc49b", 
+                               "#ffb236", "#ff9633","#ff9")) + 
+  labs(title = paste("Biliary Epithelial Cell Temporal", gene, "Expression"), 
+       x = "Timepoint", 
+       y = "Normalized Expression Level") +
+  theme_minimal(base_size = 18) +                                                 
+  theme(
+    legend.position = "none",                                                   
+    axis.title = element_text(size = 14, face = "bold"),                         
+    axis.text = element_text(size = 16, color = "black"),                        
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),           
+    panel.grid.major = element_line(color = "grey90", linewidth = 0.5),         
+    panel.grid.minor = element_blank(),                                          
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 0.8)    
+  )
+
+# ---------------------- plot with permutation testing -------------------- #
 # define the feature (gene) of interest
-gene <- 'cxcr4b'
+gene <- 's1pr4'
 
 # subset the neutrophil data for cxcr4b expression greater than 0
 expressing_cells <- neutrophil@meta.data[neutrophil@assays$RNA@data[gene, ] > 0, ]
@@ -180,74 +356,22 @@ ggplot(expressing_cells, aes(x = timepoint, y = neutrophil@assays$RNA@data[gene,
   # add significance bars using geom_signif
   geom_signif(
     comparisons = list(
-      c("untreated", "0dpa"),
-      c("untreated", "1dpa"),
-      c("untreated", "2dpa"),
-      c("untreated", "3dpa")
+      c("mock", "0dpa"),
+      c("mock", "1dpa"),
+      c("mock", "2dpa"),
+      c("mock", "3dpa")
     ),
     annotations = c(
-      paste("p =", format(results_df$p_value[results_df$comparison == "untreated vs 0dpa"][1], digits = 3)),
-      paste("p =", format(results_df$p_value[results_df$comparison == "untreated vs 1dpa"][1], digits = 3)),
-      paste("p =", format(results_df$p_value[results_df$comparison == "untreated vs 2dpa"][1], digits = 3)),
-      paste("p =", format(results_df$p_value[results_df$comparison == "untreated vs 3dpa"][1], digits = 3))
+      paste("p =", format(results_df$p_value[results_df$comparison == "mock vs 0dpa"][1], digits = 3)),
+      paste("p =", format(results_df$p_value[results_df$comparison == "mock vs 1dpa"][1], digits = 3)),
+      paste("p =", format(results_df$p_value[results_df$comparison == "mock vs 2dpa"][1], digits = 3)),
+      paste("p =", format(results_df$p_value[results_df$comparison == "mock vs 3dpa"][1], digits = 3))
     ),
     y_position = c(
-      max(neutrophil@assays$RNA@data['cxcr4b', ]) + 0.1,
-      max(neutrophil@assays$RNA@data['cxcr4b', ]) + 0.3,
-      max(neutrophil@assays$RNA@data['cxcr4b', ]) + 0.5,
-      max(neutrophil@assays$RNA@data['cxcr4b', ]) + 0.7
+      max(neutrophil@assays$RNA@data[gene, ]) + 0.1,
+      max(neutrophil@assays$RNA@data[gene, ]) + 0.3,
+      max(neutrophil@assays$RNA@data[gene, ]) + 0.5,
+      max(neutrophil@assays$RNA@data[gene, ]) + 0.7
     ),
     tip_length = 0.03
   )
-
-# marker selection
-cluster0.neutrophil <- FindMarkers(neutrophil, ident.1 = 0)
-cluster1.neutrophil <- FindMarkers(neutrophil, ident.1 = 1)
-cluster2.neutrophil <- FindMarkers(neutrophil, ident.1 = 2)
-cluster3.neutrophil <- FindMarkers(neutrophil, ident.1 = 3)
-cluster4.neutrophil <- FindMarkers(neutrophil, ident.1 = 4)
-cluster5.neutrophil <- FindMarkers(neutrophil, ident.1 = 5)
-cluster6.neutrophil <- FindMarkers(neutrophil, ident.1 = 6)
-cluster7.neutrophil <- FindMarkers(neutrophil, ident.1 = 7)
-
-# -------------------- hepatocyte subcluster w integration ----------------------- #
-# first pull out the hepatocyte
-hep <- subset(x = zf, idents = "Hepatocyte")
-# split by time point
-timepoint_list <- SplitObject(hep, split.by = "timepoint")
-# extract each seurat obj for each time point
-untreated <- timepoint_list[["untreated"]]
-mock <- timepoint_list[["mock"]]
-dpa0 <- timepoint_list[["0dpa"]]
-dpa1 <- timepoint_list[["1dpa"]]
-dpa2 <- timepoint_list[["2dpa"]]
-dpa3 <- timepoint_list[["3dpa"]]
-dpa7 <- timepoint_list[["7dpa"]]
-
-# split by sample for each time point
-sample_list <- SplitObject(untreated, split.by = "orig.ident")
-
-# normalize and find variable genes for each sample
-for (i in 1:length(sample_list)) {
-  sample_list[[i]] <- NormalizeData(object = sample_list[[i]])
-  sample_list[[i]] <- FindVariableFeatures(object = sample_list[[i]])
-}
-
- # select integration features
-features <- SelectIntegrationFeatures(object.list = sample_list)
-
-# find integration anchors (CCA)
-anchors <- FindIntegrationAnchors(object.list = sample_list,
-                                  anchor.features = features,
-                                  k.filter = NA)
-
-# integrate the data
-integrated <- IntegrateData(anchorset = anchors, k.weight = 30)
-
-# scale the data
-integrated <- ScaleData(object = integrated)
-integrated <- RunPCA(object = integrated)
-integrated <- RunUMAP(object = integrated, dims = 1:50)
-
-DimPlot(integrated, reduction = 'umap', group.by = 'orig.ident')
-DimPlot(dpa7, reduction = 'umap', group.by = 'orig.ident')
