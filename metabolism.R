@@ -106,11 +106,47 @@ filter_significant_genes <- function(data, gene_list, p_value_threshold = 0.05, 
   return(filtered_data)
 }
 
-# apply the function 
+# Apply the function for each pathway ID
 bec3dpa_dre00010_significant <- filter_significant_genes(bec3dpa_dre00010, dre00010_genes)
 bec7dpa_dre00010_significant <- filter_significant_genes(bec7dpa_dre00010, dre00010_genes)
 hep3dpa_dre00010_significant <- filter_significant_genes(hep3dpa_dre00010, dre00010_genes)
 hep7dpa_dre00010_significant <- filter_significant_genes(hep7dpa_dre00010, dre00010_genes)
+
+bec3dpa_dre00071_significant <- filter_significant_genes(bec3dpa_dre00071, dre00071_genes)
+bec7dpa_dre00071_significant <- filter_significant_genes(bec7dpa_dre00071, dre00071_genes)
+hep3dpa_dre00071_significant <- filter_significant_genes(hep3dpa_dre00071, dre00071_genes)
+hep7dpa_dre00071_significant <- filter_significant_genes(hep7dpa_dre00071, dre00071_genes)
+
+bec3dpa_dre00061_significant <- filter_significant_genes(bec3dpa_dre000611, dre00061_genes)
+bec7dpa_dre00061_significant <- filter_significant_genes(bec7dpa_dre00061, dre00061_genes)
+hep3dpa_dre00061_significant <- filter_significant_genes(hep3dpa_dre00061, dre00061_genes)
+hep7dpa_dre00061_significant <- filter_significant_genes(hep7dpa_dre00061, dre00061_genes)
+
+bec3dpa_dre00020_significant <- filter_significant_genes(bec3dpa_dre00020, dre00020_genes)
+bec7dpa_dre00020_significant <- filter_significant_genes(bec7dpa_dre00020, dre00020_genes)
+hep3dpa_dre00020_significant <- filter_significant_genes(hep3dpa_dre00020, dre00020_genes)
+hep7dpa_dre00020_significant <- filter_significant_genes(hep7dpa_dre00020, dre00020_genes)
+
+bec3dpa_dre00120_significant <- filter_significant_genes(bec3dpa_dre00120, dre00120_genes)
+bec7dpa_dre00120_significant <- filter_significant_genes(bec7dpa_dre00120, dre00120_genes)
+hep3dpa_dre00120_significant <- filter_significant_genes(hep3dpa_dre00120, dre00120_genes)
+hep7dpa_dre00120_significant <- filter_significant_genes(hep7dpa_dre00120, dre00120_genes)
+
+bec3dpa_dre00561_significant <- filter_significant_genes(bec3dpa_dre00561, dre00561_genes)
+bec7dpa_dre00561_significant <- filter_significant_genes(bec7dpa_dre00561, dre00561_genes)
+hep3dpa_dre00561_significant <- filter_significant_genes(hep3dpa_dre00561, dre00561_genes)
+hep7dpa_dre00561_significant <- filter_significant_genes(hep7dpa_dre00561, dre00561_genes)
+
+bec3dpa_dre00564_significant <- filter_significant_genes(bec3dpa_dre00564, dre00564_genes)
+bec7dpa_dre00564_significant <- filter_significant_genes(bec7dpa_dre00564, dre00564_genes)
+hep3dpa_dre00564_significant <- filter_significant_genes(hep3dpa_dre00564, dre00564_genes)
+hep7dpa_dre00564_significant <- filter_significant_genes(hep7dpa_dre00564, dre00564_genes)
+
+bec3dpa_dre00980_significant <- filter_significant_genes(bec3dpa_dre00980, dre00980_genes)
+bec7dpa_dre00980_significant <- filter_significant_genes(bec7dpa_dre00980, dre00980_genes)
+hep3dpa_dre00980_significant <- filter_significant_genes(hep3dpa_dre00980, dre00980_genes)
+hep7dpa_dre00980_significant <- filter_significant_genes(hep7dpa_dre00980, dre00980_genes)
+
 
 # Define the function to extract rows and columns based on significant genes and timepoint
 extract_significant_genes_from_normalized <- function(significant_data, normalized_data, timepoint) {
@@ -137,4 +173,37 @@ bec7dpa_dre00010_matched <- extract_significant_genes_from_normalized(bec7dpa_dr
 hep3dpa_dre00010_matched <- extract_significant_genes_from_normalized(hep3dpa_dre00010_significant, normalized_hep, "3dpa")
 hep7dpa_dre00010_matched <- extract_significant_genes_from_normalized(hep7dpa_dre00010_significant, normalized_hep, "7dpa")
 
+bec3dpa_dre00071_matched <- extract_significant_genes_from_normalized(bec3dpa_dre00071_significant, normalized_hep, "3dpa")
+bec7dpa_dre00071_matched <- extract_significant_genes_from_normalized(bec7dpa_dre00071_significant, normalized_hep, "7dpa")
+hep3dpa_dre00071_matched <- extract_significant_genes_from_normalized(hep3dpa_dre00071_significant, normalized_hep, "3dpa")
+hep7dpa_dre00071_matched <- extract_significant_genes_from_normalized(hep7dpa_dre00071_significant, normalized_hep, "7dpa")
 
+bec3dpa_dre00010_matched <- extract_significant_genes_from_normalized(bec3dpa_dre00010_significant, normalized_hep, "3dpa")
+bec7dpa_dre00010_matched <- extract_significant_genes_from_normalized(bec7dpa_dre00010_significant, normalized_hep, "7dpa")
+hep3dpa_dre00010_matched <- extract_significant_genes_from_normalized(hep3dpa_dre00010_significant, normalized_hep, "3dpa")
+hep7dpa_dre00010_matched <- extract_significant_genes_from_normalized(hep7dpa_dre00010_significant, normalized_hep, "7dpa")
+
+bec3dpa_dre00010_matched <- extract_significant_genes_from_normalized(bec3dpa_dre00010_significant, normalized_hep, "3dpa")
+bec7dpa_dre00010_matched <- extract_significant_genes_from_normalized(bec7dpa_dre00010_significant, normalized_hep, "7dpa")
+hep3dpa_dre00010_matched <- extract_significant_genes_from_normalized(hep3dpa_dre00010_significant, normalized_hep, "3dpa")
+hep7dpa_dre00010_matched <- extract_significant_genes_from_normalized(hep7dpa_dre00010_significant, normalized_hep, "7dpa")
+
+bec3dpa_dre00010_matched <- extract_significant_genes_from_normalized(bec3dpa_dre00010_significant, normalized_hep, "3dpa")
+bec7dpa_dre00010_matched <- extract_significant_genes_from_normalized(bec7dpa_dre00010_significant, normalized_hep, "7dpa")
+hep3dpa_dre00010_matched <- extract_significant_genes_from_normalized(hep3dpa_dre00010_significant, normalized_hep, "3dpa")
+hep7dpa_dre00010_matched <- extract_significant_genes_from_normalized(hep7dpa_dre00010_significant, normalized_hep, "7dpa")
+
+bec3dpa_dre00010_matched <- extract_significant_genes_from_normalized(bec3dpa_dre00010_significant, normalized_hep, "3dpa")
+bec7dpa_dre00010_matched <- extract_significant_genes_from_normalized(bec7dpa_dre00010_significant, normalized_hep, "7dpa")
+hep3dpa_dre00010_matched <- extract_significant_genes_from_normalized(hep3dpa_dre00010_significant, normalized_hep, "3dpa")
+hep7dpa_dre00010_matched <- extract_significant_genes_from_normalized(hep7dpa_dre00010_significant, normalized_hep, "7dpa")
+
+bec3dpa_dre00010_matched <- extract_significant_genes_from_normalized(bec3dpa_dre00010_significant, normalized_hep, "3dpa")
+bec7dpa_dre00010_matched <- extract_significant_genes_from_normalized(bec7dpa_dre00010_significant, normalized_hep, "7dpa")
+hep3dpa_dre00010_matched <- extract_significant_genes_from_normalized(hep3dpa_dre00010_significant, normalized_hep, "3dpa")
+hep7dpa_dre00010_matched <- extract_significant_genes_from_normalized(hep7dpa_dre00010_significant, normalized_hep, "7dpa")
+
+bec3dpa_dre00010_matched <- extract_significant_genes_from_normalized(bec3dpa_dre00010_significant, normalized_hep, "3dpa")
+bec7dpa_dre00010_matched <- extract_significant_genes_from_normalized(bec7dpa_dre00010_significant, normalized_hep, "7dpa")
+hep3dpa_dre00010_matched <- extract_significant_genes_from_normalized(hep3dpa_dre00010_significant, normalized_hep, "3dpa")
+hep7dpa_dre00010_matched <- extract_significant_genes_from_normalized(hep7dpa_dre00010_significant, normalized_hep, "7dpa")
