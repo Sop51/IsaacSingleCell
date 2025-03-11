@@ -2,6 +2,8 @@ library(Seurat)
 library(glmGamPoi)
 library(tidyverse)
 library(edgeR)
+library(dplyr)
+library(tidyverse)
 
 # ------------------- pseudobulk set up ----------------------- #
 # make a copy fo the original Seurat obj
@@ -55,7 +57,7 @@ colData <- colData %>%
                             ifelse(grepl("7dpa", samples), "7dpa", NA)))))))) %>% column_to_rownames(var = 'samples')
 
 # set the condition to a factor vairable
-colData$condition <- as.factor(colData$condition)
+groups <- as.factor(colData$condition)
 
 # create the DGElist object
 y <- DGEList(counts=counts_bil,group=groups)
@@ -67,6 +69,7 @@ y <- y[keep,,keep.lib.sizes=FALSE]
 y <- normLibSizes(y)
 # calculate the normalization factors
 y <- calcNormFactors(y)
+normalized_bec <- cpm(y)
 # create the model design
 design <- model.matrix(~0+groups)
 # estimate dispersion
@@ -94,8 +97,8 @@ dpa7_bil <- as.data.frame(dpa7_bil_qlf)
 write.csv(dpa0_bil, "/Users/sm2949/Desktop/SingleCellV2WithinClusterDE/dpa0_bil_DE_results.csv", row.names = TRUE)
 write.csv(dpa1_bil, "/Users/sm2949/Desktop/SingleCellV2WithinClusterDE/dpa1_bil_DE_results.csv", row.names = TRUE)
 write.csv(dpa2_bil, "/Users/sm2949/Desktop/SingleCellV2WithinClusterDE/dpa2_bil_DE_results.csv", row.names = TRUE)
-write.csv(dpa3_bil, "/Users/sm2949/Desktop/SingleCellV2WithinClusterDE/dpa3_bil_DE_results.csv", row.names = TRUE)
-write.csv(dpa7_bil, "/Users/sm2949/Desktop/SingleCellV2WithinClusterDE/dpa7_bil_DE_results.csv", row.names = TRUE)
+write.csv(dpa3_bil, "/Users/sophiemarcotte/Desktop/SingleCellV2WithinClusterDE/dpa3_bil_DE_results.csv", row.names = TRUE)
+write.csv(dpa7_bil, "/Users/sophiemarcotte/Desktop/SingleCellV2WithinClusterDE/dpa7_bil_DE_results.csv", row.names = TRUE)
 # ------------------- pseudobulk for hepatocytes ----------------------- #
 # get the counts matrix
 counts_hep <- cts.split.modified$Hep
@@ -154,8 +157,8 @@ dpa7_hep <- as.data.frame(dpa7_hep_qlf)
 write.csv(dpa0_hep, "/Users/sm2949/Desktop/SingleCellV2WithinClusterDE/dpa0_hep_DE_results.csv", row.names = TRUE)
 write.csv(dpa1_hep, "/Users/sm2949/Desktop/SingleCellV2WithinClusterDE/dpa1_hep_DE_results.csv", row.names = TRUE)
 write.csv(dpa2_hep, "/Users/sm2949/Desktop/SingleCellV2WithinClusterDE/dpa2_hep_DE_results.csv", row.names = TRUE)
-write.csv(dpa3_hep, "/Users/sm2949/Desktop/SingleCellV2WithinClusterDE/dpa3_hep_DE_results.csv", row.names = TRUE)
-write.csv(dpa7_hep, "/Users/sm2949/Desktop/SingleCellV2WithinClusterDE/dpa7_hep_DE_results.csv", row.names = TRUE)
+write.csv(dpa3_hep, "/Users/sophiemarcotte/Desktop/SingleCellV2WithinClusterDE/dpa3_hep_DE_results.csv", row.names = TRUE)
+write.csv(dpa7_hep, "/Users/sophiemarcotte/Desktop/SingleCellV2WithinClusterDE/dpa7_hep_DE_results.csv", row.names = TRUE)
 
 # ------------------- pseudobulk for macrophages ----------------------- #
 # get the counts matrix

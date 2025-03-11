@@ -23,7 +23,7 @@ feature <- FeaturePlot(zf, features = c("lima1a"))
 # plot side by side
 umap | feature
 
-# differential gene expression
+#--------------------- differential gene expression ------------------------ #
 macrophage_table <- FindMarkers(zf, ident.1 = 'Macrophage', only.pos = TRUE)
 bec_table <- FindMarkers(zf, ident.1 = 'Biliary Epithelial Cell', only.pos = TRUE)
 end_table <- FindMarkers(zf, ident.1 = 'Endothelial Cell', only.pos = TRUE)
@@ -53,6 +53,7 @@ de_tables <- list(
   fthl = fthl_table
 )
 
+# ----------------- small function to identify which cell types genes are sig in ------------------ #
 # gene of interest
 gene <- "spint2"
 
@@ -75,3 +76,49 @@ if (length(significant_cell_types) > 0) {
   cat("The gene", gene, "is not significantly differentially expressed in any table.\n")
 }
 
+# ------------- plotting cell type proportions across timepoints ------------------ #
+# create a custom color pallete
+custom <- c(
+  "#011a51",
+  "#B6228A",
+  "#fab129",
+  "#f06c00",
+  "#b83700",
+  "#143D0C",
+  "#94B622",
+  "#AAB8D6",
+  "#B68222",
+  "#27167F",
+  "#DFACCC",
+  "#FDE335"
+)
+
+# extract relevant metadata
+metadata <- zf@meta.data
+
+# count the number of cells for each combination of cell type and timepoint
+cell_counts <- metadata %>%
+  group_by(cell.type.12.long, timepoint) %>%
+  summarise(cell_count = n()) %>%
+  ungroup()
+
+# stacked bar chart 
+ggplot(cell_counts, aes(x = timepoint, y = cell_count, fill = cell.type.12.long)) +
+  geom_bar(stat = "identity", position = "fill") +  # Stacked proportions
+  labs(
+    title = "Cell Type Proportions Across Timepoints",
+    x = "Timepoint",
+    y = "Proportion",
+    fill = "Cell Type"
+  ) +
+  scale_fill_manual(values = custom) +  # Match colors to custom palette
+  theme_minimal() +  # Clean background
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 14),  # Larger x-axis labels
+    axis.text.y = element_text(size = 14),  # Larger y-axis labels
+    axis.title.x = element_text(size = 16, face = "bold"),  # Larger x-axis title
+    axis.title.y = element_text(size = 16, face = "bold"),  # Larger y-axis title
+    legend.text = element_text(size = 14),  # Larger legend text
+    legend.title = element_text(size = 16, face = "bold"),  # Larger legend title
+    plot.title = element_text(hjust = 0.5, size = 18, face = "bold")  # Larger plot title
+  )

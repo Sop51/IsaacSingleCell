@@ -231,7 +231,7 @@ apln <- FindClusters(apln, resolution = 0.2)
 apln <- RunUMAP(apln, dims = 1:18)
 
 # plot!!
-x <- DimPlot(apln, reduction = "umap", group.by = 'orig.ident')
+x <- DimPlot(apln, reduction = "umap")
 y <- DimPlot(apln, reduction = "umap", group.by = "timepoint")
 
 x | y

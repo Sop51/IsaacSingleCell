@@ -222,3 +222,35 @@ ggplot(long_nes_hep, aes(x = Timepoint, y = NES, color = Pathway, group = Pathwa
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   theme_minimal()
 
+# creating a plot of ALL cell types
+long_nes_bec$CellType <- "BEC"
+long_nes_mac$CellType <- "Macrophage"
+long_nes_hep$CellType <- "Hepatocyte"
+
+# combine into one df
+long_nes_all <- bind_rows(long_nes_bec, long_nes_mac, long_nes_hep)
+
+# remove the cell name from the timepoint column
+long_nes_all$Timepoint <- gsub("^[a-zA-Z]+", "", long_nes_all$Timepoint)
+
+# plot
+ggplot(long_nes_all, aes(x = Timepoint, y = NES, color = CellType, group = CellType)) +
+  geom_line(size = 1.2) +  
+  geom_point(size = 3) +   
+  scale_color_manual(values = c("Hepatocyte" = "#011a51", 
+                                "BEC" = "#B6228A", 
+                                "Macrophage" = "#f06c00")) + 
+  labs(title = "NES Over Regeneration for Matrisome Gene Sets Across Cell Types", 
+       x = "Timepoint (dpa)", 
+       y = "Normalized Enrichment Score (NES)", 
+       color = "Cell Type") +
+  theme_minimal(base_size = 14) +  # Increase base font size for readability
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12, color = "black"), # Rotate x-axis labels
+    axis.text.y = element_text(size = 12, color = "black"), 
+    axis.title = element_text(size = 14, face = "bold"), 
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5), # Centered title
+    legend.position = "right", 
+    legend.text = element_text(size = 12)
+  )
+
