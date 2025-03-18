@@ -55,7 +55,7 @@ de_tables <- list(
 
 # ----------------- small function to identify which cell types genes are sig in ------------------ #
 # gene of interest
-gene <- "spint2"
+gene <- "anxa2a"
 
 # check for significant adjusted p-value in each table
 significant_tables <- sapply(names(de_tables), function(ct) {

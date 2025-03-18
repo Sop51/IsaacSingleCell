@@ -5,6 +5,8 @@ library(dplyr)
 library(tidyverse)
 library(ggplot2)
 library(GseaVis)
+library(Seurat)
+library(edgeR)
 
 # load in the matrisome gene set
 matrisome_all <- read.csv('/Users/sm2949/Desktop/Dr_Matrisome_Masterlist_Nauroy et al_2017.xlsx - Dr_Matrisome_Masterlist.csv')
@@ -27,8 +29,6 @@ proteoglycans_genes <- proteoglycans$Zebrafish.Gene.Symbol
 
 ecm_glycoproteins <- matrisome_all[matrisome_all$Matrisome.Category == "ECM Glycoproteins",]
 ecm_glycoproteins_genes <- ecm_glycoproteins$Zebrafish.Gene.Symbol
-
-background_genes <- rownames(zf)
 
 gene_sets <- list(Matrisome = matrisome_all$Zebrafish.Gene.Symbol)
 
@@ -58,8 +58,7 @@ run_gsea <- function(ranked_list, gene_sets) {
                         scoreType = 'std',
                         minSize = 10,
                         maxSize = 500,
-                        nproc = 1,
-                        geneL)
+                        nproc = 1)
   return(gsea_results)
 }
 
@@ -112,13 +111,29 @@ common_pathways_bec <- merged_nes_bec[complete.cases(merged_nes_bec[, -1]), ]
 long_nes_bec <- common_pathways_bec %>%
   pivot_longer(cols = starts_with("bec"), names_to = "Timepoint", values_to = "NES")
 
+# remove the cell name from the timepoint column
+long_nes_bec$Timepoint <- gsub("^[a-zA-Z]+", "", long_nes_bec$Timepoint)
+
+# plot
 ggplot(long_nes_bec, aes(x = Timepoint, y = NES, color = Pathway, group = Pathway)) +
-  geom_line() +
-  geom_point() +
-  labs(title = "NES Over Regeneration In BECs for Matrisome Gene Sets", 
-       x = "Timepoint (dpa)", y = "Normalized Enrichment Score (NES)") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  theme_minimal()
+  geom_line(size = 1.0) + 
+  geom_point(size = 1.5) +   
+  scale_color_brewer(palette = "Set2") +  
+  labs(title = "NES Over Liver Regeneration in BECs for Matrisome Gene Sets", 
+       x = "Timepoint (dpa)", 
+       y = "Normalized Enrichment Score \n (NES)", 
+       color = "Category") +
+  theme_light(base_size = 12) +  # Cleaner theme with larger text
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12, color = "black"), # Rotated x-axis labels
+    axis.text.y = element_text(size = 12, color = "black"), 
+    axis.title = element_text(size = 12, face = "bold"), 
+    plot.title = element_text(size = 12, face = "bold", hjust = 0.5), # Centered title
+    legend.position = "right", 
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 12, face = "bold"),
+    panel.border = element_rect(color = "black", fill = NA, size = 1.2)  # Thicker border
+  )
 
 # ------------------- perform for macrophages across timepoints ---------------- #
 mac0dpa_df <- read_csv("/Users/sm2949/Desktop/SingleCellV2WithinClusterDE/dpa0_mac_DE_results.csv")
@@ -161,13 +176,29 @@ common_pathways_mac <- merged_nes_mac[complete.cases(merged_nes_mac[, -1]), ]
 long_nes_mac <- common_pathways_mac %>%
   pivot_longer(cols = starts_with("mac"), names_to = "Timepoint", values_to = "NES")
 
+# remove the cell name from the timepoint column
+long_nes_mac$Timepoint <- gsub("^[a-zA-Z]+", "", long_nes_mac$Timepoint)
+
+# plot
 ggplot(long_nes_mac, aes(x = Timepoint, y = NES, color = Pathway, group = Pathway)) +
-  geom_line() +
-  geom_point() +
-  labs(title = "NES Over Regeneration In Macrophages for Matrisome Gene Sets", 
-       x = "Timepoint (dpa)", y = "Normalized Enrichment Score (NES)") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  theme_minimal()
+  geom_line(size = 1.0) + 
+  geom_point(size = 1.5) +   
+  scale_color_brewer(palette = "Set2") +  
+  labs(title = "NES Over Liver Regeneration in Macrophages for Matrisome Gene Sets", 
+       x = "Timepoint (dpa)", 
+       y = "Normalized Enrichment Score \n (NES)", 
+       color = "Category") +
+  theme_light(base_size = 12) +  # Cleaner theme with larger text
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12, color = "black"), # Rotated x-axis labels
+    axis.text.y = element_text(size = 12, color = "black"), 
+    axis.title = element_text(size = 12, face = "bold"), 
+    plot.title = element_text(size = 12, face = "bold", hjust = 0.5), # Centered title
+    legend.position = "right", 
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 12, face = "bold"),
+    panel.border = element_rect(color = "black", fill = NA, size = 1.2)  # Thicker border
+  )
 
 # ------------------- perform for macrophages across timepoints ---------------- #
 hep0dpa_df <- read_csv("/Users/sm2949/Desktop/SingleCellV2WithinClusterDE/dpa0_hep_DE_results.csv")
@@ -190,10 +221,6 @@ gsea_hep2dpa <- run_gsea(hep2dpa_ranked, gene_sets)
 gsea_hep3dpa <- run_gsea(hep3dpa_ranked, gene_sets)
 gsea_hep7dpa <- run_gsea(hep7dpa_ranked, gene_sets)
 
-plotEnrichment(gene_sets[["Secreted_Factors"]],
-               hep1dpa_ranked) + labs(title="Matrisome")
-
-
 # Extract NES for each timepoint
 nes_hep0dpa <- get_nes(gsea_hep0dpa)
 nes_hep1dpa <- get_nes(gsea_hep1dpa)
@@ -214,15 +241,31 @@ common_pathways_hep <- merged_nes_hep[complete.cases(merged_nes_hep[, -1]), ]
 long_nes_hep <- common_pathways_hep %>%
   pivot_longer(cols = starts_with("hep"), names_to = "Timepoint", values_to = "NES")
 
-ggplot(long_nes_hep, aes(x = Timepoint, y = NES, color = Pathway, group = Pathway)) +
-  geom_line() +
-  geom_point() +
-  labs(title = "NES Over Regeneration In Hepatocytes for Matrisome Gene Sets", 
-       x = "Timepoint (dpa)", y = "Normalized Enrichment Score (NES)") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  theme_minimal()
+# remove the cell name from the timepoint column
+long_nes_hep$Timepoint <- gsub("^[a-zA-Z]+", "", long_nes_hep$Timepoint)
 
-# creating a plot of ALL cell types
+# plot
+ggplot(long_nes_hep, aes(x = Timepoint, y = NES, color = Pathway, group = Pathway)) +
+  geom_line(size = 1.0) + 
+  geom_point(size = 1.5) +   
+  scale_color_brewer(palette = "Set2") +  
+  labs(title = "NES Over Liver Regeneration in Hepatocytes for Matrisome Gene Sets", 
+       x = "Timepoint (dpa)", 
+       y = "Normalized Enrichment Score \n (NES)", 
+       color = "Category") +
+  theme_light(base_size = 12) +  # Cleaner theme with larger text
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12, color = "black"), # Rotated x-axis labels
+    axis.text.y = element_text(size = 12, color = "black"), 
+    axis.title = element_text(size = 12, face = "bold"), 
+    plot.title = element_text(size = 12, face = "bold", hjust = 0.5), # Centered title
+    legend.position = "right", 
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 12, face = "bold"),
+    panel.border = element_rect(color = "black", fill = NA, size = 1.2)  # Thicker border
+  )
+
+# ---------------------- creating a plot of ALL cell types ------------------------- #
 long_nes_bec$CellType <- "BEC"
 long_nes_mac$CellType <- "Macrophage"
 long_nes_hep$CellType <- "Hepatocyte"
@@ -236,21 +279,279 @@ long_nes_all$Timepoint <- gsub("^[a-zA-Z]+", "", long_nes_all$Timepoint)
 # plot
 ggplot(long_nes_all, aes(x = Timepoint, y = NES, color = CellType, group = CellType)) +
   geom_line(size = 1.2) +  
-  geom_point(size = 3) +   
+  geom_point(size = 2) +   
   scale_color_manual(values = c("Hepatocyte" = "#011a51", 
                                 "BEC" = "#B6228A", 
                                 "Macrophage" = "#f06c00")) + 
-  labs(title = "NES Over Regeneration for Matrisome Gene Sets Across Cell Types", 
+  labs(title = "NES Over Liver Regeneration for Matrisome Gene Sets Across Cell Types", 
        x = "Timepoint (dpa)", 
-       y = "Normalized Enrichment Score (NES)", 
+       y = "Normalized Enrichment Score \n (NES)", 
        color = "Cell Type") +
-  theme_minimal(base_size = 14) +  # Increase base font size for readability
+  theme_minimal(base_size = 12) +  # Increase base font size for readability
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1, size = 12, color = "black"), # Rotate x-axis labels
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10, color = "black"), # Rotate x-axis labels
     axis.text.y = element_text(size = 12, color = "black"), 
-    axis.title = element_text(size = 14, face = "bold"), 
-    plot.title = element_text(size = 16, face = "bold", hjust = 0.5), # Centered title
+    axis.title = element_text(size = 12, face = "bold"), 
+    plot.title = element_text(size = 12, face = "bold", hjust = 0.5), # Centered title
     legend.position = "right", 
-    legend.text = element_text(size = 12)
+    legend.text = element_text(size = 12),
+    panel.border = element_rect(color = "black", fill = NA, size = 1)  # Add a box around the plot
   )
+# -------------------------- create the heatmap --------------------------- #
+# NOTE : THIS IS FOR HEPATOCYTES
+# read in the file containing leading gene edge info for each cell type
+leading_edges <- read_csv('/Users/sm2949/Desktop/v2SingleCellLeadingEdge.csv')
+
+# reformat the categories 
+leading_edges <- leading_edges %>%
+  mutate(Category = case_when(
+    Category == "ecm affiliated proteins" ~ "ECM-affiliated proteins",
+    Category == "ecm glycoproteins" ~ "ECM glycoproteins",
+    Category == "ecm regulators" ~ "ECM regulators",
+    Category == "secreted factors" ~ "Secreted factors",
+    TRUE ~ Category # Keep other values unchanged
+  )) 
+
+# NOTE: THIS SECTION IS FOR HEPATOCYTES 
+# extract the genes for each timepoint
+leading_0dpa_genes <- unlist(leading_edges[leading_edges$`cell type` == "Hepatocyte", '0dpa'])
+leading_1dpa_genes <- unlist(leading_edges[leading_edges$`cell type` == "Hepatocyte", '1dpa'])
+leading_2dpa_genes <- unlist(leading_edges[leading_edges$`cell type` == "Hepatocyte", '2dpa'])
+leading_3dpa_genes <- unlist(leading_edges[leading_edges$`cell type` == "Hepatocyte", '3dpa'])
+leading_7dpa_genes <- unlist(leading_edges[leading_edges$`cell type` == "Hepatocyte", '7dpa'])
+
+# combine into one list 
+all_leading_genes_hep <- c(leading_0dpa_genes, 
+                           leading_1dpa_genes, 
+                           leading_2dpa_genes, 
+                           leading_3dpa_genes, 
+                           leading_7dpa_genes)
+
+# subset the count matrix for only the wanted genes
+leading_edge_hep <- normalized_hep[rownames(normalized_hep) %in% all_leading_genes_hep, ]
+leading_edge_hep <- as.data.frame(leading_edge_hep)
+leading_edge_hep <- leading_edge_hep[, !colnames(leading_edge_hep) %in% c("mock")]
+leading_edge_hep <- as.matrix(leading_edge_hep)
+
+# Create a metadata frame to hold timepoints and KEGG categories for the genes
+gene_metadata <- leading_edges %>% 
+  filter(`cell type` == "Hepatocyte") %>%
+  select('0dpa', '1dpa', '2dpa', '3dpa', '7dpa', 'Category') %>%
+  gather(key = "timepoint", value = "gene", -Category) %>%
+  filter(gene %in% rownames(leading_edge_hep)) %>%
+  distinct(gene, Category, .keep_all = TRUE)
+
+# Create a new data frame that matches the order of genes in `leading_edge_hep`
+ordered_gene_metadata <- gene_metadata %>%
+  filter(gene %in% rownames(leading_edge_hep)) %>%
+  arrange(match(gene, rownames(leading_edge_hep))) %>%
+  select(gene, Category)
+
+# Set the gene column as the row names
+ordered_gene_metadata <- as.data.frame(ordered_gene_metadata)
+rownames(ordered_gene_metadata) <- ordered_gene_metadata$gene
+ordered_gene_metadata <- ordered_gene_metadata %>% select(-gene)
+
+annotation_colors <- list(
+  Category = c("ECM-affiliated proteins" = "#eab69f",
+               "ECM glycoproteins" = "#e07a5f", 
+               "ECM regulators" = "#3d405b",
+               "Secreted factors" = "#f2cc8f")
+)
+
+ha <- HeatmapAnnotation(Category = ordered_gene_metadata$Category,
+                        which = 'row',
+                        col = annotation_colors)
+
+timepoint_split <- gene_metadata %>%
+  filter(gene %in% rownames(leading_edge_hep)) %>%
+  arrange(match(gene, rownames(leading_edge_hep))) %>%
+  pull(timepoint)
+
+# Z-score normalize the matrix by row (genes)
+leading_edge_hep_zscored <- t(scale(t(leading_edge_hep)))
+
+# remove columns that start with "mock" or "untreated"
+leading_edge_hep_zscored <- leading_edge_hep_zscored %>%
+  as.data.frame() %>%
+  select(-starts_with("mock"), -starts_with("untreated")) 
+
+# clean up the column names to remove the library
+clean_names <- gsub("LIB11[[:alpha:]]$", "", colnames(leading_edge_hep_zscored))
+
+# ensure uniqueness by appending .rep1, .rep2, etc.
+colnames(leading_edge_hep_zscored) <- ave(clean_names, clean_names, FUN = function(x) {
+  if (length(x) > 1) paste0(x, ".rep", seq_along(x)) else x
+})
+
+leading_edge_hep_zscored <- as.matrix(leading_edge_hep_zscored)
+
+# generate heatmap with annotations
+Heatmap(leading_edge_hep_zscored, right_annotation = ha, 
+        cluster_columns = FALSE, cluster_rows = TRUE,
+        rect_gp = gpar(col = "white", lwd = 2),
+        column_title = "Leading Edge Matrisome Genes Per Pathway In Hepatocytes",
+        heatmap_legend_param = list(
+          title = gt_render("<span style='color:black'>**Expression**</span>"), 
+          at = c(-2, 0, 2), 
+          labels = gt_render(c("Low Expression", "No Change", "High Expression"))
+        ))
+
+# NOTE : THIS IS FOR MACROPHAGES
+# extract the genes for each timepoint
+leading_0dpa_genes <- unlist(leading_edges[leading_edges$`cell type` == "Macrophage", '0dpa'])
+leading_1dpa_genes <- unlist(leading_edges[leading_edges$`cell type` == "Macrophage", '1dpa'])
+leading_2dpa_genes <- unlist(leading_edges[leading_edges$`cell type` == "Macrophage", '2dpa'])
+leading_3dpa_genes <- unlist(leading_edges[leading_edges$`cell type` == "Macrophage", '3dpa'])
+leading_7dpa_genes <- unlist(leading_edges[leading_edges$`cell type` == "Macrophage", '7dpa'])
+
+# combine into one list 
+all_leading_genes_mac <- c(leading_0dpa_genes, 
+                           leading_1dpa_genes, 
+                           leading_2dpa_genes, 
+                           leading_3dpa_genes, 
+                           leading_7dpa_genes)
+
+# subset the count matrix for only the wanted genes
+leading_edge_mac <- normalized_mac[rownames(normalized_mac) %in% all_leading_genes_mac, ]
+leading_edge_mac <- as.data.frame(leading_edge_mac)
+leading_edge_mac <- leading_edge_mac[, !colnames(leading_edge_mac) %in% c("mock")]
+leading_edge_mac <- as.matrix(leading_edge_mac)
+
+# Create a metadata frame to hold timepoints and KEGG categories for the genes
+gene_metadata <- leading_edges %>% 
+  filter(`cell type` == "Macrophage") %>%
+  select('0dpa', '1dpa', '2dpa', '3dpa', '7dpa', 'Category') %>%
+  gather(key = "timepoint", value = "gene", -Category) %>%
+  filter(gene %in% rownames(leading_edge_mac)) %>%
+  distinct(gene, Category, .keep_all = TRUE)
+
+# Create a new data frame that matches the order of genes in `leading_edge_mac`
+ordered_gene_metadata <- gene_metadata %>%
+  filter(gene %in% rownames(leading_edge_mac)) %>%
+  arrange(match(gene, rownames(leading_edge_mac))) %>%
+  select(gene, Category)
+
+# Set the gene column as the row names
+ordered_gene_metadata <- as.data.frame(ordered_gene_metadata)
+rownames(ordered_gene_metadata) <- ordered_gene_metadata$gene
+ordered_gene_metadata <- ordered_gene_metadata %>% select(-gene)
+
+
+ha <- HeatmapAnnotation(Category = ordered_gene_metadata$Category,
+                        which = 'row',
+                        col = annotation_colors)
+
+timepoint_split <- gene_metadata %>%
+  filter(gene %in% rownames(leading_edge_mac)) %>%
+  arrange(match(gene, rownames(leading_edge_mac))) %>%
+  pull(timepoint)
+
+# Z-score normalize the matrix by row (genes)
+leading_edge_mac_zscored <- t(scale(t(leading_edge_mac)))
+
+# remove columns that start with "mock" or "untreated"
+leading_edge_mac_zscored <- leading_edge_mac_zscored %>%
+  as.data.frame() %>%
+  select(-starts_with("mock"), -starts_with("untreated")) 
+
+# clean up the column names to remove the library
+clean_names <- gsub("LIB11[[:alpha:]]$", "", colnames(leading_edge_mac_zscored))
+
+# ensure uniqueness by appending .rep1, .rep2, etc.
+colnames(leading_edge_mac_zscored) <- ave(clean_names, clean_names, FUN = function(x) {
+  if (length(x) > 1) paste0(x, ".rep", seq_along(x)) else x
+})
+
+leading_edge_mac_zscored <- as.matrix(leading_edge_mac_zscored)
+
+# generate heatmap with annotations
+Heatmap(leading_edge_mac_zscored, right_annotation = ha, 
+        cluster_columns = FALSE, cluster_rows = TRUE,
+        rect_gp = gpar(col = "white", lwd = 2),
+        column_title = "Leading Edge Matrisome Genes Per Pathway In Macrophages",
+        heatmap_legend_param = list(
+          title = gt_render("<span style='color:black'>**Expression**</span>"), 
+          at = c(-2, 0, 2), 
+          labels = gt_render(c("Low Expression", "No Change", "High Expression"))
+        ))
+
+# NOTE : THIS IS FOR BECS
+# extract the genes for each timepoint
+leading_0dpa_genes <- unlist(leading_edges[leading_edges$`cell type` == "BEC", '0dpa'])
+leading_1dpa_genes <- unlist(leading_edges[leading_edges$`cell type` == "BEC", '1dpa'])
+leading_2dpa_genes <- unlist(leading_edges[leading_edges$`cell type` == "BEC", '2dpa'])
+leading_3dpa_genes <- unlist(leading_edges[leading_edges$`cell type` == "BEC", '3dpa'])
+leading_7dpa_genes <- unlist(leading_edges[leading_edges$`cell type` == "BEC", '7dpa'])
+
+# combine into one list 
+all_leading_genes_bec <- c(leading_0dpa_genes, 
+                           leading_1dpa_genes, 
+                           leading_2dpa_genes, 
+                           leading_3dpa_genes, 
+                           leading_7dpa_genes)
+
+# subset the count matrix for only the wanted genes
+leading_edge_bec <- normalized_bec[rownames(normalized_bec) %in% all_leading_genes_bec, ]
+leading_edge_bec <- as.data.frame(leading_edge_bec)
+leading_edge_bec <- leading_edge_bec[, !colnames(leading_edge_bec) %in% c("mock")]
+leading_edge_bec <- as.matrix(leading_edge_bec)
+
+# Create a metadata frame to hold timepoints and KEGG categories for the genes
+gene_metadata <- leading_edges %>% 
+  filter(`cell type` == "BEC") %>%
+  select('0dpa', '1dpa', '2dpa', '3dpa', '7dpa', 'Category') %>%
+  gather(key = "timepoint", value = "gene", -Category) %>%
+  filter(gene %in% rownames(leading_edge_bec)) %>%
+  distinct(gene, Category, .keep_all = TRUE)
+
+# Create a new data frame that matches the order of genes in `leading_edge_bec`
+ordered_gene_metadata <- gene_metadata %>%
+  filter(gene %in% rownames(leading_edge_bec)) %>%
+  arrange(match(gene, rownames(leading_edge_bec))) %>%
+  select(gene, Category)
+
+# Set the gene column as the row names
+ordered_gene_metadata <- as.data.frame(ordered_gene_metadata)
+rownames(ordered_gene_metadata) <- ordered_gene_metadata$gene
+ordered_gene_metadata <- ordered_gene_metadata %>% select(-gene)
+
+
+ha <- HeatmapAnnotation(Category = ordered_gene_metadata$Category,
+                        which = 'row',
+                        col = annotation_colors)
+
+timepoint_split <- gene_metadata %>%
+  filter(gene %in% rownames(leading_edge_bec)) %>%
+  arrange(match(gene, rownames(leading_edge_bec))) %>%
+  pull(timepoint)
+
+# Z-score normalize the matrix by row (genes)
+leading_edge_bec_zscored <- t(scale(t(leading_edge_bec)))
+
+# remove columns that start with "mock" or "untreated"
+leading_edge_bec_zscored <- leading_edge_bec_zscored %>%
+  as.data.frame() %>%
+  select(-starts_with("mock"), -starts_with("untreated")) 
+
+# clean up the column names to remove the library
+clean_names <- gsub("LIB11[[:alpha:]]$", "", colnames(leading_edge_bec_zscored))
+
+# ensure uniqueness by appending .rep1, .rep2, etc.
+colnames(leading_edge_bec_zscored) <- ave(clean_names, clean_names, FUN = function(x) {
+  if (length(x) > 1) paste0(x, ".rep", seq_along(x)) else x
+})
+
+leading_edge_bec_zscored <- as.matrix(leading_edge_bec_zscored)
+
+# generate heatmap with annotations
+Heatmap(leading_edge_bec_zscored, right_annotation = ha, 
+        cluster_columns = FALSE, cluster_rows = TRUE,
+        rect_gp = gpar(col = "white", lwd = 2),
+        column_title = "Leading Edge Matrisome Genes Per Pathway In BECs",
+        heatmap_legend_param = list(
+          title = gt_render("<span style='color:black'>**Expression**</span>"), 
+          at = c(-2, 0, 2), 
+          labels = gt_render(c("Low Expression", "No Change", "High Expression"))
+        ))
 

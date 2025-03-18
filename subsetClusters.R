@@ -169,10 +169,19 @@ mac <- FindClusters(mac, resolution = 0.4)
 mac <- RunUMAP(mac, dims = 1:20)
 
 # plot!!
-x <- DimPlot(mac, reduction = "umap", group.by = "orig.ident")
+x <- DimPlot(mac, reduction = "umap")
 y <- DimPlot(mac, reduction = "umap", group.by = "timepoint")
 
 x | y
+
+DefaultAssay(mac) <- "RNA"
+# marker selection
+cluster0.mac <- FindMarkers(mac, ident.1 = 0)
+cluster1.mac <- FindMarkers(mac, ident.1 = 1)
+cluster2.mac <- FindMarkers(mac, ident.1 = 2)
+cluster3.mac <- FindMarkers(mac, ident.1 = 3)
+cluster4.mac <- FindMarkers(mac, ident.1 = 4)
+cluster5.mac <- FindMarkers(mac, ident.1 = 5)
 
 # ------------------------ Lymphocyte subcluster -------------------------- #
 # first pull out the lymphocyte cells

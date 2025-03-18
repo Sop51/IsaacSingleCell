@@ -190,6 +190,7 @@ y <- y[keep,,keep.lib.sizes=FALSE]
 y <- normLibSizes(y)
 # calculate the normalization factors
 y <- calcNormFactors(y)
+normalized_mac <- cpm(y)
 # create the model design
 design <- model.matrix(~0+groups)
 # estimate dispersion
