@@ -55,10 +55,9 @@ prepare_ranked_list <- function(df) {
 run_gsea <- function(ranked_list, gene_sets) {
   gsea_results <- fgsea(pathways = gene_sets,
                         stats = ranked_list,
-                        scoreType = 'std',
-                        minSize = 10,
-                        maxSize = 500,
-                        nproc = 1)
+                        scoreType = 'neg',
+                        minSize = 5,
+                        maxSize = 500)
   return(gsea_results)
 }
 
@@ -260,11 +259,41 @@ ggplot(long_nes_hep, aes(x = Timepoint, y = NES, color = Pathway, group = Pathwa
     axis.title = element_text(size = 12, face = "bold"), 
     plot.title = element_text(size = 12, face = "bold", hjust = 0.5), # Centered title
     legend.position = "right", 
-    legend.text = element_text(size = 10),
-    legend.title = element_text(size = 12, face = "bold"),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14, face = "bold"),
     panel.border = element_rect(color = "black", fill = NA, size = 1.2)  # Thicker border
   )
+# ---------------------- create all plots in a row ---------------------------- #
+# Add a column to indicate the cell type
+long_nes_bec$CellType <- "BECs"
+long_nes_mac$CellType <- "Macrophages"
+long_nes_hep$CellType <- "Hepatocytes"
 
+# Combine all datasets
+combined_nes <- bind_rows(long_nes_bec, long_nes_mac, long_nes_hep)
+
+# Plot with faceting
+ggplot(combined_nes, aes(x = Timepoint, y = NES, color = Pathway, group = Pathway)) +
+  geom_line(size = 1.0) + 
+  geom_point(size = 1.5) +   
+  scale_color_brewer(palette = "Set2") +  
+  labs(title = "NES Over Liver Regeneration for Matrisome Gene Sets", 
+       x = "Timepoint (dpa)", 
+       y = "Normalized Enrichment Score (NES)", 
+       color = "Category") +
+  theme_light(base_size = 12) +  
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12, color = "black"), 
+    axis.text.y = element_text(size = 12, color = "black"), 
+    axis.title = element_text(size = 12, face = "bold"), 
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5), 
+    legend.position = "right", 
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 12, face = "bold"),
+    panel.border = element_rect(color = "black", fill = NA, size = 1.2),  
+    strip.text = element_text(size = 12, face = "bold", color = "black")  # Change facet label text color to black
+  ) +
+  facet_wrap(~CellType, nrow = 1)  # Facet in a single row
 # ---------------------- creating a plot of ALL cell types ------------------------- #
 long_nes_bec$CellType <- "BEC"
 long_nes_mac$CellType <- "Macrophage"

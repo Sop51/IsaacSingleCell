@@ -7,30 +7,26 @@ library(tidyverse)
 library(dplyr)
 
 # -------------------- getting the data set up ------------------------ #
+zf_filtered <- zf
+
 DefaultAssay(ecm_subset) <- "RNA" # use RNA assay for normalization and selecting variable features
-
-# filter for high quality cells
-zf_filtered <- subset(zf, subset = nCount_RNA > 800 &
-                    nFeature_RNA > 500)
-
-# remove genes that are only expressed in a small number of cells
-expr_mat <- GetAssayData(zf_filtered, layer = "counts")
-genes_to_keep <- rowSums(expr_mat > 0) >= 10
-zf_filtered <- subset(zf_filtered, features = rownames(expr_mat)[genes_to_keep])
 
 # set cell type as the ident for sub-setting
 Idents(zf_filtered) <- zf_filtered$cell.type.12.long
 
 # filter for ECM producing cells
-ecm_subset <- subset(zf_filtered, idents = c("Macrophage"), 
+ecm_subset <- subset(zf_filtered, idents = c("Biliary Epithelial Cell", "Hepatocyte"), 
                      subset = timepoint %in% c("mock", "untreated") == FALSE)
+
+# After subsetting, drop unused levels from the cell type factor
+ecm_subset$cell.type.12.long<- droplevels(ecm_subset$cell.type.12.long)
 
 # pre-processing of data
 # normalize the data
 ecm_subset <- NormalizeData(ecm_subset)
 
 # find variable features
-ecm_subset <- FindVariableFeatures(ecm_subset, selection.method = "vst", nfeatures = 2000)
+ecm_subset <- FindVariableFeatures(ecm_subset, selection.method = "vst", nfeatures = 2000, loess.span = 0.5)
 
 # change assay to integrated for the latter steps
 DefaultAssay(ecm_subset) <- "integrated"
@@ -58,9 +54,52 @@ x|y
 # set default assay back to RNA
 DefaultAssay(ecm_subset) <- "RNA"
 
-# ----------------- convert to monacle3
+# ----------------- convert to monacle3 -------------------#
+############################### USING MONOCLE3 CLUSTERING ############################
 cds <- as.cell_data_set(ecm_subset)
+# to get gene metadata, set new col
+fData(cds)$gene_short_name <- rownames(fData(cds))
+cds <- preprocess_cds(cds, num_dim = 100)
+plot_pc_variance_explained(cds)
+cds <- reduce_dimension(cds)
+cds <- cluster_cells(cds, resolution=1e-5)
+cds <- learn_graph(cds)
 
+# order the cells in pseudotime
+cds <- order_cells(cds, reduction_method = 'UMAP', root_cells = colnames(cds[,cds@colData@listData[["timepoint"]] == '0dpa']))
+
+plot_cells(cds, color_cells_by = 'cell.type.12.long',
+           cell_size = 1,
+           label_principal_points = TRUE) + theme(legend.position = "right")
+
+# find genes that change as a function of pseudotime
+deg_ecm <- graph_test(cds, neighbor_graph = 'principal_graph', cores=4)
+# filter for DE genes
+deg_ecm %>%
+  arrange(q_value) %>%
+  filter(status == 'OK') %>%
+  head()
+
+cds_subset <- choose_cells(cds)
+
+# find genes that change as a function of pseudotime
+deg_ecm <- graph_test(cds_subset, neighbor_graph = 'principal_graph', cores=4)
+# filter for DE genes
+deg_ecm %>%
+  arrange(q_value) %>%
+  filter(status == 'OK') %>%
+  head()
+
+plot_cells(cds, genes=c("CABZ01080568.1", "hsp90aa1.2", "si:dkey-96g2.1", "krt18a.1", "si:ch73-335l21.4", "lgals2b"),
+           show_trajectory_graph=FALSE,
+           label_cell_groups=FALSE,
+           label_leaves=FALSE)
+
+# pull out DE genes
+pr_deg_ids <- row.names(subset(deg_ecm, q_value < 0.05))
+
+
+########################### USING SEURATS PRE DONE COMPUTATIONS ###############################
 # to get cell metadata
 colData(cds)
 
@@ -72,10 +111,11 @@ counts(cds)
 
 # retrieve clustering information and store in new object
 # assign partitions
-reacreate.partition <- c(rep(1, length(cds@colData@rownames)))
-names(reacreate.partition) <- cds@colData@rownames
-reacreate.partition <- as.factor(reacreate.partition)
-cds@clusters$UMAP$partitions <- reacreate.partition
+recreate.partition <- as.factor(cds@colData$cell.type.12.long)
+# Ensure the names match the cell names in the cds object
+names(recreate.partition) <- rownames(cds@colData)
+# Assign these partitions to the cds clusters
+cds@clusters$UMAP$partitions <- recreate.partition
 
 # assign the cluster information
 list_cluster <- ecm_subset@active.ident
@@ -98,7 +138,7 @@ cluster.names <- plot_cells(cds,
 cluster.before.traj|cluster.names
 
 # learn trajectory graph
-cds <- learn_graph(cds, use_partition = FALSE)
+cds <- learn_graph(cds, use_partition = TRUE)
 
 plot_cells(cds,
            color_cells_by = "timepoint",
@@ -128,7 +168,7 @@ data.pseudo <- as.data.frame(colData(cds))
 ggplot(data.pseudo, aes(monocle3_pseudotime, cell.type.12.long, fill = cell.type.12.long)) +
   geom_boxplot()
 
-# find genes that change as a function ogf pseudotime
+# find genes that change as a function of pseudotime
 deg_ecm <- graph_test(cds, neighbor_graph = 'principal_graph', cores=4)
 # filter for DE genes
 deg_ecm %>%
@@ -136,8 +176,16 @@ deg_ecm %>%
   filter(status == 'OK') %>%
   head()
 
+deg_ids <- row.names(subset(deg_ecm, q_value < 0.05))
+
 # showing genes DE across the pathway
-FeaturePlot(ecm_subset, features = c('fabp11a', 'si:dkey-102g19.3', 'BX908782.2', 'ctsba', 'ctsd', 'si:ch211-198c19.3'))
+FeaturePlot(ecm_subset, features = c('cfd', 'krt94', 'mdka', 'anxa1a', 'sparc', 'gstm.3'))
+
+# calculate modules of co-expressed genes
+gene_modules <- find_gene_modules(cds[deg_ids,],
+                                  resolution=c(10^seq(-6,-1)))
+table(gene_modules$module)
+
 
 # vizualizing pseudotimne in seurat
 ecm_subset$pseudotime <- pseudotime(cds)
@@ -150,5 +198,5 @@ cds_subset <- cds[rowData(cds)$gene_short_name %in% gene,]
 gene_fits <- fit_models(cds_subset, model_formula_str = "~timepoint")
 fit_coefs <- coefficient_table(gene_fits)
 
-plot_genes_hybrid(cds_subset, group_cells_by="timepoint") +
-  theme(axis.text.x=element_text(angle=45, hjust=1))
+# how good is this model at evaluating gene expression?
+evaluate_fits(gene_fits)
