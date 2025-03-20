@@ -60,17 +60,26 @@ cds <- as.cell_data_set(ecm_subset)
 # to get gene metadata, set new col
 fData(cds)$gene_short_name <- rownames(fData(cds))
 cds <- preprocess_cds(cds, num_dim = 100)
+cds <- align_cds(cds, alignment_group = "orig.ident")
 plot_pc_variance_explained(cds)
 cds <- reduce_dimension(cds)
-cds <- cluster_cells(cds, resolution=1e-5)
+cds <- cluster_cells(cds, resolution=1e-4)
 cds <- learn_graph(cds)
 
 # order the cells in pseudotime
 cds <- order_cells(cds, reduction_method = 'UMAP', root_cells = colnames(cds[,cds@colData@listData[["timepoint"]] == '0dpa']))
 
-plot_cells(cds, color_cells_by = 'cell.type.12.long',
+time <- plot_cells(cds, color_cells_by = 'timepoint',
            cell_size = 1,
            label_principal_points = TRUE) + theme(legend.position = "right")
+
+type <- plot_cells(cds, color_cells_by = 'cell.type.12.long',
+                   cell_size = 1,
+                   label_roots = FALSE,
+                   label_branch_points = TRUE,
+                   label_leaves = TRUE) + theme(legend.position = "right")
+
+time | type
 
 # find genes that change as a function of pseudotime
 deg_ecm <- graph_test(cds, neighbor_graph = 'principal_graph', cores=4)
@@ -90,7 +99,7 @@ deg_ecm %>%
   filter(status == 'OK') %>%
   head()
 
-plot_cells(cds, genes=c("CABZ01080568.1", "hsp90aa1.2", "si:dkey-96g2.1", "krt18a.1", "si:ch73-335l21.4", "lgals2b"),
+plot_cells(cds, genes=c("hsp90aa1.2", "hspa5", "CABZ01080568.1", "sat1a.1", "cnn2", "mcl1a"),
            show_trajectory_graph=FALSE,
            label_cell_groups=FALSE,
            label_leaves=FALSE)
