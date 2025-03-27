@@ -100,7 +100,6 @@ deg_ecm %>%
   head()
 
 plot_cells(cds, genes=c("hsp90aa1.2", "hspa5", "CABZ01080568.1", "sat1a.1", "cnn2", "mcl1a"),
-           show_trajectory_graph=FALSE,
            label_cell_groups=FALSE,
            label_leaves=FALSE)
 
@@ -150,16 +149,17 @@ cluster.before.traj|cluster.names
 cds <- learn_graph(cds, use_partition = TRUE)
 
 plot_cells(cds,
-           color_cells_by = "timepoint",
+           color_cells_by = "cell.type.12.long",
            label_groups_by_cluster = FALSE,
            label_branch_points = FALSE,
            label_roots = FALSE,
            label_leaves = FALSE,
-           group_label_size = 5,
-           cell_size = 1.5
-           ) + theme(legend.position = "right")
+           group_label_size = 7,
+           cell_size = 1.5,
+           scale_to_range = FALSE
+           ) + theme(legend.position = "right") 
 
-# order the cells in pseudotime
+ # order the cells in pseudotime
 cds <- order_cells(cds, reduction_method = 'UMAP', root_cells = colnames(cds[,cds@colData@listData[["timepoint"]] == '0dpa']))
 
 plot_cells(cds,

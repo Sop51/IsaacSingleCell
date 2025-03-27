@@ -3,6 +3,7 @@ library(ggpubr)
 library(ggplot2)
 library(ggsignif)
 library(harmony)
+library(Seurat)
 
 # -------------------- hepatocyte subcluster ----------------------- #
 # first pull out the hepatocyte
@@ -148,11 +149,21 @@ x | y
 # ------------------ Macrophage cell cluster ---------------------- #
 # first pull out the macrophage cells
 mac <- subset(x = zf, idents = "Macrophage")
+
+# removing ribosomal and heatshock genes
+counts <- GetAssayData(mac, assay = "RNA", slot = "counts")
+genes_to_remove <- rownames(counts)[grepl("^rps|^hsp|^rpl", rownames(counts))]
+counts <- counts[!(rownames(counts) %in% genes_to_remove), ]
+mac <- subset(mac, features = rownames(counts))
+
 # use RNA assat for normalization and selecting variable features
 DefaultAssay(mac) <- "RNA"
 mac <- NormalizeData(mac)
 # find variable features
 mac <- FindVariableFeatures(mac, selection.method = "vst", nfeatures = 2000)
+existing_variable_features <- VariableFeatures(mac)
+combined_variable_features <- unique(c(existing_variable_features, genes_of_interest))
+VariableFeatures(mac) <- combined_variable_features
 # change assay to integrated for the latter steps
 DefaultAssay(mac) <- "integrated"
 # scale the data on these top variable features
@@ -164,25 +175,24 @@ ElbowPlot(mac)
 # construct a KNN graph - take dimensionality previously determined
 mac <- FindNeighbors(mac, dims = 1:20)
 # cluster the cells 
-mac <- FindClusters(mac, resolution = 0.4)
+mac <- FindClusters(mac, resolution = 0.3)
 # run umap - only displays LOCAL relationships
 mac <- RunUMAP(mac, dims = 1:20)
 
 # plot!!
-x <- DimPlot(mac, reduction = "umap")
+x <- FeaturePlot(mac, features = "cd63")
 y <- DimPlot(mac, reduction = "umap", group.by = "timepoint")
 
 x | y
 
+
 DefaultAssay(mac) <- "RNA"
 # marker selection
-cluster0.mac <- FindMarkers(mac, ident.1 = 0)
-cluster1.mac <- FindMarkers(mac, ident.1 = 1)
-cluster2.mac <- FindMarkers(mac, ident.1 = 2)
-cluster3.mac <- FindMarkers(mac, ident.1 = 3)
-cluster4.mac <- FindMarkers(mac, ident.1 = 4)
-cluster5.mac <- FindMarkers(mac, ident.1 = 5)
-
+cluster0.mac <- FindMarkers(mac, ident.1 = 0, only.pos = TRUE)
+cluster1.mac <- FindMarkers(mac, ident.1 = 1, only.pos = TRUE)
+cluster2.mac <- FindMarkers(mac, ident.1 = 2, only.pos = TRUE)
+cluster3.mac <- FindMarkers(mac, ident.1 = 3, only.pos = TRUE)
+cluster4.mac <- FindMarkers(mac, ident.1 = 4, only.pos = TRUE)
 # ------------------------ Lymphocyte subcluster -------------------------- #
 # first pull out the lymphocyte cells
 lymph <- subset(x = zf, idents = "Lymphocyte")
