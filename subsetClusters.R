@@ -45,7 +45,7 @@ VlnPlot(hep, features = "ezh2", group.by = "timepoint")
 # first pull out the hepatocyte
 bec <- subset(x = zf, idents = "Biliary Epithelial Cell")
 # use RNA assat for normalization and selecting variable features
-DefaultAssay(end) <- "RNA"
+DefaultAssay(bec) <- "RNA"
 # normalize the data
 bec <- NormalizeData(bec)
 # find variable features
@@ -61,12 +61,17 @@ ElbowPlot(hep)
 # construct a KNN graph - take dimensionality previously determined
 bec <- FindNeighbors(bec, dims = 1:20)
 # cluster the cells 
-bec <- FindClusters(bec, resolution = 0.4)
+bec <- FindClusters(bec, resolution = 0.3)
 # run umap - only displays LOCAL relationships
 bec <- RunUMAP(bec, dims = 1:20)
 
 # plot!!
-DimPlot(bec, reduction = "umap", group.by = "timepoint")
+x <- DimPlot(bec, reduction = "umap", group.by = "timepoint")
+DimPlot(bec, reduction = "umap")
+
+y <- FeaturePlot(bec, features = 'prox1a')
+
+x|y
 
 # marker selection
 cluster0.bec <- FindMarkers(bec, ident.1 = 0)
@@ -146,6 +151,8 @@ y <- DimPlot(end, reduction = "umap", group.by = "timepoint")
 
 x | y
 
+VlnPlot(end, features = c('anxa2a'), group.by = "timepoint")
+
 # ------------------ Macrophage cell cluster ---------------------- #
 # first pull out the macrophage cells
 mac <- subset(x = zf, idents = "Macrophage")
@@ -224,7 +231,7 @@ x | y
 
 # ---------------------- apln+ cell cluster ------------------------------ #
 # first pull out the apln+ cells
-apln <- subset(x = zf, idents = "apln+")
+apln <- subset(x = zf, idents = c("apln+", "Endothelial Cell"))
 # use RNA assat for normalization and selecting variable features
 DefaultAssay(apln) <- "RNA"
 # remove genes expressed in small num of cells to avoid simpleLoess warning
@@ -251,13 +258,30 @@ apln <- RunUMAP(apln, dims = 1:18)
 
 # plot!!
 x <- DimPlot(apln, reduction = "umap")
-y <- DimPlot(apln, reduction = "umap", group.by = "timepoint")
+z <- DimPlot(apln, reduction = "umap", group.by = "timepoint")
 
-x | y
+y <- DimPlot(apln, reduction = "umap", group.by = "cell.type.12.long")
+z <- FeaturePlot(apln, features=c('NC-002333.4'))
+
+VlnPlot(cluster0apln, features = c('apln'), group.by = 'timepoint')
+cluster0apln <- subset(x = apln, idents = 0)
+x | y | z
 
 DefaultAssay(apln) <- "RNA"
 zero <- FindMarkers(apln, ident.1 = 0, only.pos = TRUE)
 one <- FindMarkers(apln, ident.1 = 1, only.pos = TRUE)
+two <- FindMarkers(apln, ident.1 = 2, only.pos = TRUE)
+
+# Select the top 10 markers for each cluster based on average log fold change
+top10_zero <- head(zero, 10)
+top10_one  <- head(one, 10)
+top10_two  <- head(two, 10)
+
+# Combine gene names (unique markers from all three clusters)
+markers <- unique(c(rownames(top10_zero), rownames(top10_one), rownames(top10_two)))
+
+# Generate the dot plot with Seurat's DotPlot function
+DotPlot(apln, features = markers) + RotatedAxis()
 # ----------- code to produce a box plot for a cell type across time points ------------- #
 celltype <- bec
 gene <- 'spint2'
@@ -292,10 +316,10 @@ ggplot(data, aes(x = timepoint, y = spint2, fill = timepoint)) +
 
 # ---------------------- plot with permutation testing -------------------- #
 # define the feature (gene) of interest
-gene <- 's1pr4'
+gene <- 'anxa2a'
 
 # subset the neutrophil data for cxcr4b expression greater than 0
-expressing_cells <- neutrophil@meta.data[neutrophil@assays$RNA@data[gene, ] > 0, ]
+expressing_cells <- end@meta.data[end@assays$RNA@data[gene, ] > 0, ]
 
 # function to compute the mean difference between two groups
 mean_diff <- function(group1, group2) {
@@ -356,7 +380,7 @@ results_df <- data.frame(
 )
 
 # box plot with permutation test p-values
-ggplot(expressing_cells, aes(x = timepoint, y = neutrophil@assays$RNA@data[gene, ][neutrophil@assays$RNA@data[gene, ] > 0], fill = timepoint)) +
+ggplot(expressing_cells, aes(x = timepoint, y = end@assays$RNA@data[gene, ][end@assays$RNA@data[gene, ] > 0], fill = timepoint)) +
   geom_boxplot(outlier.shape = NA, alpha = 0.7, size = 0.7, color = "black", width = 0.5) +  
   geom_jitter(width = 0.2, alpha = 0.7, size = 2, color = "gray30") +  
   scale_fill_manual(values = cbPalette) +  

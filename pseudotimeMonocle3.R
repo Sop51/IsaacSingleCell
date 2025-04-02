@@ -16,7 +16,7 @@ Idents(zf_filtered) <- zf_filtered$cell.type.12.long
 
 # filter for ECM producing cells
 ecm_subset <- subset(zf_filtered, idents = c("Biliary Epithelial Cell", "Hepatocyte"), 
-                     subset = timepoint %in% c("mock", "untreated") == FALSE)
+                     subset = timepoint %in% c("untreated") == FALSE)
 
 # After subsetting, drop unused levels from the cell type factor
 ecm_subset$cell.type.12.long<- droplevels(ecm_subset$cell.type.12.long)

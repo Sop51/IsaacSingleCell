@@ -122,3 +122,4 @@ ggplot(cell_counts, aes(x = timepoint, y = cell_count, fill = cell.type.12.long)
     legend.title = element_text(size = 16, face = "bold"),  # Larger legend title
     plot.title = element_text(hjust = 0.5, size = 18, face = "bold")  # Larger plot title
   )
+
