@@ -15,8 +15,13 @@ DefaultAssay(ecm_subset) <- "RNA" # use RNA assay for normalization and selectin
 Idents(zf_filtered) <- zf_filtered$cell.type.12.long
 
 # filter for ECM producing cells
-ecm_subset <- subset(zf_filtered, idents = c("Biliary Epithelial Cell", "Hepatocyte"), 
+bec_subset <- subset(zf_filtered, idents = c("Biliary Epithelial Cell"), 
                      subset = timepoint %in% c("untreated") == FALSE)
+
+hep_subset <- subset(zf_filtered, idents = c("Hepatocyte"), 
+                     subset = timepoint %in% c("untreated", "mock", "0dpa", "1dpa") == FALSE)
+
+ecm_subset <- merge(hep_subset, bec_subset)
 
 # After subsetting, drop unused levels from the cell type factor
 ecm_subset$cell.type.12.long<- droplevels(ecm_subset$cell.type.12.long)
@@ -47,8 +52,8 @@ ecm_subset <- FindClusters(ecm_subset, resolution = 0.2)
 ecm_subset <- RunUMAP(ecm_subset, dims = 1:30, n.neighbors = 50)
 
 # plot
-x <- DimPlot(ecm_subset, reduction = "umap", label = T)
-y <- DimPlot(ecm_subset, reduction = "umap", group.by = 'cell.type.12.long', label = T)
+x <- DimPlot(ecm_subset, reduction = "umap", group.by = 'timepoint')
+y <- DimPlot(ecm_subset, reduction = "umap", group.by = 'cell.type.12.long')
 x|y
 
 # set default assay back to RNA
@@ -59,15 +64,16 @@ DefaultAssay(ecm_subset) <- "RNA"
 cds <- as.cell_data_set(ecm_subset)
 # to get gene metadata, set new col
 fData(cds)$gene_short_name <- rownames(fData(cds))
-cds <- preprocess_cds(cds, num_dim = 100)
-cds <- align_cds(cds, alignment_group = "orig.ident")
-plot_pc_variance_explained(cds)
-cds <- reduce_dimension(cds)
-cds <- cluster_cells(cds, resolution=1e-4)
-cds <- learn_graph(cds)
+#cds <- preprocess_cds(cds, num_dim = 50)
+#cds <- align_cds(cds, alignment_group = "orig.ident")
+#plot_pc_variance_explained(cds)
+#cds <- reduce_dimension(cds)
+cds <- cluster_cells(cds, reduction_method = 'UMAP')
+cds <- learn_graph(cds, use_partition = TRUE)
 
 # order the cells in pseudotime
-cds <- order_cells(cds, reduction_method = 'UMAP', root_cells = colnames(cds[,cds@colData@listData[["timepoint"]] == '0dpa']))
+cds <- order_cells(cds, reduction_method = 'UMAP', root_cells = colnames(cds[,cds@colData@listData[["timepoint"]] == 'mock']))
+
 
 time <- plot_cells(cds, color_cells_by = 'timepoint',
            cell_size = 1,

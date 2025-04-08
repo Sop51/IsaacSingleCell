@@ -8,7 +8,7 @@ library(patchwork)
 
 # -------------------- hepatocyte subcluster ----------------------- #
 # first pull out the hepatocyte
-hep <- subset(x = zf, idents = "Hepatocyte")
+hep <- subset(x = zf, idents = c("Hepatocyte"))
 # normalize the data
 hep <- NormalizeData(hep)
 # find variable features
