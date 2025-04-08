@@ -4,6 +4,7 @@ library(ggplot2)
 library(ggsignif)
 library(harmony)
 library(Seurat)
+library(patchwork)
 
 # -------------------- hepatocyte subcluster ----------------------- #
 # first pull out the hepatocyte
@@ -235,9 +236,9 @@ apln <- subset(x = zf, idents = c("apln+", "Endothelial Cell"))
 # use RNA assat for normalization and selecting variable features
 DefaultAssay(apln) <- "RNA"
 # remove genes expressed in small num of cells to avoid simpleLoess warning
-gene_counts <- rowSums(as.matrix(GetAssayData(apln, slot = "counts")) > 0)
-min_cells <- 0.01 * ncol(apln)  # 1% of total cells
-apln <- subset(apln, features = names(gene_counts[gene_counts > min_cells]))
+#gene_counts <- rowSums(as.matrix(GetAssayData(apln, slot = "counts")) > 0)
+#min_cells <- 0.01 * ncol(apln)  # 1% of total cells
+#apln <- subset(apln, features = names(gene_counts[gene_counts > min_cells]))
 apln <- NormalizeData(apln)
 # find variable features
 apln <- FindVariableFeatures(apln, selection.method = "vst", nfeatures = 2000)
@@ -260,12 +261,7 @@ apln <- RunUMAP(apln, dims = 1:18)
 x <- DimPlot(apln, reduction = "umap")
 z <- DimPlot(apln, reduction = "umap", group.by = "timepoint")
 
-y <- DimPlot(apln, reduction = "umap", group.by = "cell.type.12.long")
-z <- FeaturePlot(apln, features=c('NC-002333.4'))
-
-VlnPlot(cluster0apln, features = c('apln'), group.by = 'timepoint')
-cluster0apln <- subset(x = apln, idents = 0)
-x | y | z
+x | y
 
 DefaultAssay(apln) <- "RNA"
 zero <- FindMarkers(apln, ident.1 = 0, only.pos = TRUE)
@@ -282,19 +278,39 @@ markers <- unique(c(rownames(top10_zero), rownames(top10_one), rownames(top10_tw
 
 # Generate the dot plot with Seurat's DotPlot function
 DotPlot(apln, features = markers) + RotatedAxis()
+
+# plotting a umap at each timepoint
+Idents(apln) <- 'timepoint'
+apln_mock <- subset(x = apln, idents = c("mock"))
+apln_0 <- subset(x = apln, idents = c("0dpa"))
+apln_1 <- subset(x = apln, idents = c("1dpa"))
+apln_2 <- subset(x = apln, idents = c("2dpa"))
+apln_3 <- subset(x = apln, idents = c("3dpa"))
+apln_7 <- subset(x = apln, idents = c("7dpa"))
+
+mock_apln_dim <- DimPlot(apln_mock, reduction = "umap", group.by = 'cell.type.12.long') + ggtitle("Mock")
+mock_apln_0   <- DimPlot(apln_0,   reduction = "umap", group.by = 'cell.type.12.long') + ggtitle("0 dpa")
+mock_apln_1   <- DimPlot(apln_1,   reduction = "umap", group.by = 'cell.type.12.long') + ggtitle("1 dpa")
+mock_apln_2   <- DimPlot(apln_2,   reduction = "umap", group.by = 'cell.type.12.long') + ggtitle("2 dpa")
+mock_apln_3   <- DimPlot(apln_3,   reduction = "umap", group.by = 'cell.type.12.long') + ggtitle("3 dpa")
+mock_apln_7   <- DimPlot(apln_7,   reduction = "umap", group.by = 'cell.type.12.long') + ggtitle("7 dpa")
+
+(mock_apln_dim + mock_apln_0 + mock_apln_1) /
+  (mock_apln_2 + mock_apln_3 + mock_apln_7)
+
 # ----------- code to produce a box plot for a cell type across time points ------------- #
-celltype <- bec
-gene <- 'spint2'
+celltype <- end
+gene <- 'olfml3a'
 
 DefaultAssay(celltype) <- 'RNA'
 # subset to only include cells expressing the gene
-non_zero <- subset(celltype, subset = spint2 > 0)
+non_zero <- subset(celltype, subset = olfml3a > 0)
 
 # convert to a data frame for ggplot
 data <- FetchData(non_zero, vars = c(gene, "timepoint"))
 
 # create a box plot
-ggplot(data, aes(x = timepoint, y = spint2, fill = timepoint)) +
+ggplot(data, aes(x = timepoint, y = olfml3a, fill = timepoint)) +
   geom_boxplot(alpha = 0.7, outlier.shape = NA, color = "black", linewidth = 0.3) + 
   geom_jitter(width = 0.2, size = 1, alpha = 0.6, color = "black") +               
   scale_fill_manual(values = c("#8ECAE6", 
