@@ -16,10 +16,10 @@ Idents(zf_filtered) <- zf_filtered$cell.type.12.long
 
 # filter for ECM producing cells
 bec_subset <- subset(zf_filtered, idents = c("Biliary Epithelial Cell"), 
-                     subset = timepoint %in% c("untreated") == FALSE)
+                     subset = timepoint %in% c("untreated", "mock", "0dpa", "7dpa") == FALSE)
 
 hep_subset <- subset(zf_filtered, idents = c("Hepatocyte"), 
-                     subset = timepoint %in% c("untreated", "mock", "0dpa", "1dpa") == FALSE)
+                     subset = timepoint %in% c("untreated", "mock", "0dpa", "1dpa", "7dpa") == FALSE)
 
 ecm_subset <- merge(hep_subset, bec_subset)
 
@@ -64,20 +64,27 @@ DefaultAssay(ecm_subset) <- "RNA"
 cds <- as.cell_data_set(ecm_subset)
 # to get gene metadata, set new col
 fData(cds)$gene_short_name <- rownames(fData(cds))
-#cds <- preprocess_cds(cds, num_dim = 50)
-#cds <- align_cds(cds, alignment_group = "orig.ident")
+cds <- preprocess_cds(cds, num_dim = 75)
+cds <- align_cds(cds, alignment_group = "orig.ident")
 #plot_pc_variance_explained(cds)
-#cds <- reduce_dimension(cds)
-cds <- cluster_cells(cds, reduction_method = 'UMAP')
-cds <- learn_graph(cds, use_partition = TRUE)
+cds <- reduce_dimension(cds, reduction_method = 'UMAP')
+plot_cells(cds)
+cds <- cluster_cells(cds)
+cds <- learn_graph(cds, use_partition = FALSE)
 
 # order the cells in pseudotime
-cds <- order_cells(cds, reduction_method = 'UMAP', root_cells = colnames(cds[,cds@colData@listData[["timepoint"]] == 'mock']))
+cds <- order_cells(cds, reduction_method = 'UMAP', 
+                   root_cells = colnames(cds[, 
+                                            cds@colData@listData[["timepoint"]] == '1dpa' & 
+                                            cds@colData@listData[["cell.type.12.long"]] == 'Biliary Epithelial Cell'
+                   ]))
 
 
 time <- plot_cells(cds, color_cells_by = 'timepoint',
            cell_size = 1,
-           label_principal_points = TRUE) + theme(legend.position = "right")
+           label_roots = FALSE,
+           label_branch_points = TRUE,
+           label_leaves = TRUE) + theme(legend.position = "right")
 
 type <- plot_cells(cds, color_cells_by = 'cell.type.12.long',
                    cell_size = 1,
@@ -103,14 +110,14 @@ deg_ecm <- graph_test(cds_subset, neighbor_graph = 'principal_graph', cores=4)
 deg_ecm %>%
   arrange(q_value) %>%
   filter(status == 'OK') %>%
-  head()
+  head(n=20)
 
-plot_cells(cds, genes=c("hsp90aa1.2", "hspa5", "CABZ01080568.1", "sat1a.1", "cnn2", "mcl1a"),
+plot_cells(cds, genes=c("fabp10a", "si:ch73-359m17.9"),
            label_cell_groups=FALSE,
            label_leaves=FALSE)
 
 # pull out DE genes
-pr_deg_ids <- row.names(subset(deg_ecm, q_value < 0.05))
+pr_deg_ids <- as.data.frame(row.names(subset(deg_ecm, q_value < 0.05)))
 
 
 ########################### USING SEURATS PRE DONE COMPUTATIONS ###############################
