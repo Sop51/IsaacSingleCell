@@ -1,4 +1,6 @@
 library(ComplexHeatmap)
+library(readr)
+library(Seurat)
 
 becdpa1vsdpa2 <- read_csv("/Users/sophiemarcotte/Desktop/SingleCellV2WithinClusterDE/dpa1vsdpa2_bil_DE_results.csv")
 becdpa2vsdpa3 <- read_csv("/Users/sophiemarcotte/Desktop/SingleCellV2WithinClusterDE/dpa2vsdpa3_bil_DE_results.csv")
@@ -20,18 +22,40 @@ zebrafishMatrisomeGenes <- matrisome_all$Zebrafish.Gene.Symbol
 sig.mat.dpa1vsdpa2 <- becdpa1vsdpa2_sig[becdpa1vsdpa2_sig$...1 %in% zebrafishMatrisomeGenes, ]
 sig.mat.dpa2vsdpa3 <- becdpa2vsdpa3_sig[becdpa2vsdpa3_sig$...1 %in% zebrafishMatrisomeGenes, ]
 
-# create the matrix
-logFC_matrix1vs2 <- as.matrix(sig.mat.dpa1vsdpa2$logFC)
-rownames(logFC_matrix1vs2) <- sig.mat.dpa1vsdpa2$...1
+sig_gene_list1 <- sig.mat.dpa1vsdpa2$...1
+sig_gene_list2 <- sig.mat.dpa2vsdpa3$...1
 
-# plot
-Heatmap(logFC_matrix1vs2, 
-        row_names_gp = gpar(fontsize = 8),
-        name = "logFC", 
-        show_row_names = TRUE, 
-        show_column_names = FALSE,
-        col = colorRampPalette(c("navy", "white", "orange"))(100), 
-        cluster_rows = TRUE,  # Don't cluster rows
-        cluster_columns = FALSE,  # Don't cluster columns
-        column_title = "logFC Values of DE Matrisome Genes in BECs 2dpa vs dpa" 
-)
+# combine the two gene lists
+combined_matrisome_list <- unique(c(sig_gene_list1, sig_gene_list2))
+
+# pull out the top20 up and down regulated genes
+top20_dpa1vsdpa2 <- head(becdpa1vsdpa2_sig[order(becdpa1vsdpa2_sig$PValue), "...1"], 20)
+top20_dpa2vsdpa3 <- head(becdpa2vsdpa3_sig[order(becdpa2vsdpa3_sig$PValue), "...1"], 20)
+
+# pull out genes into lists
+top201 <- top20_dpa1vsdpa2$...1
+top202 <- top20_dpa2vsdpa3$...1
+
+# combine and remove duplicates
+combined_top_genes <- unique(c(top201, top202))
+
+# subset the bec object to only include the wanted timepoints
+bec_subset <- subset(bec, subset = timepoint %in% c("1dpa", "2dpa", "3dpa"))
+bec_subset <- ScaleData(bec_subset, features = combined_top_genes, assay = "RNA")
+bec_subset$timepoint <- droplevels(bec_subset$timepoint)
+
+# plot the matrisome only heatmap
+DoHeatmap(bec_subset, 
+          features = combined_matrisome_list, 
+          assay = "RNA", 
+          slot = "scale.data", 
+          group.by = "timepoint") +
+  theme(axis.text.y = element_text(size = 6)) 
+
+# plot the top DE genes heatmap
+DoHeatmap(bec_subset, 
+          features = combined_top_genes, 
+          assay = "RNA", 
+          slot = "scale.data", 
+          group.by = "timepoint") +
+  theme(axis.text.y = element_text(size = 6)) 

@@ -52,7 +52,7 @@ bec <- NormalizeData(bec)
 # find variable features
 bec <- FindVariableFeatures(bec, selection.method = "vst", nfeatures = 2000)
 # change assay to integrated for the latter steps
-DefaultAssay(mac) <- "integrated"
+DefaultAssay(bec) <- "integrated"
 # scale the data on these top variable features
 bec <- ScaleData(bec)
 # run pca
@@ -266,7 +266,6 @@ x | y
 DefaultAssay(apln) <- "RNA"
 zero <- FindMarkers(apln, ident.1 = 0, only.pos = TRUE)
 one <- FindMarkers(apln, ident.1 = 1, only.pos = TRUE)
-<<<<<<< HEAD
 
 # Extract and order by p-value
 top10_zero_pval <- head(zero, 10)
@@ -279,7 +278,6 @@ top10_genes_pval <- c(rownames(top10_zero_pval), rownames(top10_one_pval))
 # Plot top 10 genes ordered by p-value
 # Plot expression of the top 10 genes ordered by p-value
 VlnPlot(apln, features = top10_genes_pval, pt.size = 0.1)
-=======
 two <- FindMarkers(apln, ident.1 = 2, only.pos = TRUE)
 
 # Select the top 10 markers for each cluster based on average log fold change
@@ -312,7 +310,6 @@ mock_apln_7   <- DimPlot(apln_7,   reduction = "umap", group.by = 'cell.type.12.
 (mock_apln_dim + mock_apln_0 + mock_apln_1) /
   (mock_apln_2 + mock_apln_3 + mock_apln_7)
 
->>>>>>> cd6b55b2e8e003a3d5baece8faef826d2e533e62
 # ----------- code to produce a box plot for a cell type across time points ------------- #
 celltype <- end
 gene <- 'olfml3a'
