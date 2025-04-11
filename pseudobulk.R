@@ -93,10 +93,20 @@ dpa3_bil <- as.data.frame(dpa3_bil_qlf)
 dpa7_bil_qlf <- glmQLFTest(fit, contrast = c(0,0,0,0,1,-1,0))
 dpa7_bil <- as.data.frame(dpa7_bil_qlf)
 
+# run special comparisons for progenitor BEC detection
+dpa1vsdpa2 <- glmQLFTest(fit, contrast = c(0,-1,1,0,0,0,0))
+dpa1vsdpa2 <- as.data.frame(dpa1vsdpa2)
+dpa2vsdpa3 <- glmQLFTest(fit, contrast = c(0,0,1,-1,0,0,0))
+dpa2vsdpa3 <- as.data.frame(dpa2vsdpa3)
+
+# save to a csv
+write.csv(dpa1vsdpa2, "/Users/sophiemarcotte/Desktop/SingleCellV2WithinClusterDE/dpa1vsdpa2_bil_DE_results.csv", row.names = TRUE)
+write.csv(dpa2vsdpa3, "/Users/sophiemarcotte/Desktop/SingleCellV2WithinClusterDE/dpa2vsdpa3_bil_DE_results.csv", row.names = TRUE)
+
 # save each DE results data frame to CSV
-write.csv(dpa0_bil, "/Users/sm2949/Desktop/SingleCellV2WithinClusterDE/dpa0_bil_DE_results.csv", row.names = TRUE)
-write.csv(dpa1_bil, "/Users/sm2949/Desktop/SingleCellV2WithinClusterDE/dpa1_bil_DE_results.csv", row.names = TRUE)
-write.csv(dpa2_bil, "/Users/sm2949/Desktop/SingleCellV2WithinClusterDE/dpa2_bil_DE_results.csv", row.names = TRUE)
+write.csv(dpa0_bil, "/Users/sophiemarcotte/Desktop/SingleCellV2WithinClusterDE/dpa0_bil_DE_results.csv", row.names = TRUE)
+write.csv(dpa1_bil, "/Users/sophiemarcotte/Desktop/SingleCellV2WithinClusterDE/dpa1_bil_DE_results.csv", row.names = TRUE)
+write.csv(dpa2_bil, "/Users/sophiemarcotte/Desktop/SingleCellV2WithinClusterDE/dpa2_bil_DE_results.csv", row.names = TRUE)
 write.csv(dpa3_bil, "/Users/sophiemarcotte/Desktop/SingleCellV2WithinClusterDE/dpa3_bil_DE_results.csv", row.names = TRUE)
 write.csv(dpa7_bil, "/Users/sophiemarcotte/Desktop/SingleCellV2WithinClusterDE/dpa7_bil_DE_results.csv", row.names = TRUE)
 # ------------------- pseudobulk for hepatocytes ----------------------- #
