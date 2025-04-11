@@ -258,6 +258,18 @@ x | y
 DefaultAssay(apln) <- "RNA"
 zero <- FindMarkers(apln, ident.1 = 0, only.pos = TRUE)
 one <- FindMarkers(apln, ident.1 = 1, only.pos = TRUE)
+
+# Extract and order by p-value
+top10_zero_pval <- head(zero, 10)
+top10_one_pval <- head(one, 10)
+
+# Extract gene names for the DotPlot
+top10_genes_pval <- c(rownames(top10_zero_pval), rownames(top10_one_pval))
+
+# Create a DotPlot of the top 10 genes
+# Plot top 10 genes ordered by p-value
+# Plot expression of the top 10 genes ordered by p-value
+VlnPlot(apln, features = top10_genes_pval, pt.size = 0.1)
 # ----------- code to produce a box plot for a cell type across time points ------------- #
 celltype <- bec
 gene <- 'spint2'
