@@ -55,13 +55,13 @@ de_tables <- list(
 
 # ----------------- small function to identify which cell types genes are sig in ------------------ #
 # gene of interest
-gene <- "anxa2a"
+gene <- "spint2"
 
 # check for significant adjusted p-value in each table
 significant_tables <- sapply(names(de_tables), function(ct) {
   table <- de_tables[[ct]]
   if (gene %in% rownames(table)) {
-    return(table[gene, "p_val_adj"] < 0.05)
+    return(table[gene, "p_val_adj"] < 1.1)
   } else {
     return(FALSE)
   }
@@ -122,3 +122,4 @@ ggplot(cell_counts, aes(x = timepoint, y = cell_count, fill = cell.type.12.long)
     legend.title = element_text(size = 16, face = "bold"),  # Larger legend title
     plot.title = element_text(hjust = 0.5, size = 18, face = "bold")  # Larger plot title
   )
+
