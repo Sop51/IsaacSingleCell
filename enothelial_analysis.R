@@ -1,8 +1,26 @@
 library(patchwork)
+library(dplyr)
+library(Seurat)
+library(ggplot2)
 
 # subset the initial seurat object
-endo_apln <- subset(x = zf, idents = c("Endothelial Cell", "apln+"))
+endo_apln <- subset(x = zf, idents = c("Endothelial Cell", "apln+"),
+                    subset = timepoint %in% c("untreated") == FALSE)
+endo_apln[["percent.mt"]] <- PercentageFeatureSet(endo_apln, pattern = "^mt-")
+endo_apln <- subset(endo_apln, subset = percent.mt < 10)
+DefaultAssay(endo_apln) <- "RNA"
+endo_apln <- NormalizeData(endo_apln)
+endo_apln <- FindVariableFeatures(endo_apln, selection.method = "vst", nfeatures = 2000, loess.span = .5)
+DefaultAssay(endo_apln) <- "integrated"
+endo_apln <- ScaleData(endo_apln)
+endo_apln <- RunPCA(endo_apln, npcs = 30)
+endo_apln <- FindNeighbors(endo_apln, dims = 1:30)
+endo_apln <- FindClusters(endo_apln, resolution = 0.2)
+endo_apln <- RunUMAP(endo_apln, dims = 1:30)
+y <- DimPlot(endo_apln, reduction = "umap")
+
 # break into timepoints
+mock <- subset(x = endo_apln, subset = timepoint == "mock")
 dpa0 <- subset(x = endo_apln, subset = timepoint == "0dpa")
 dpa1 <- subset(x = endo_apln, subset = timepoint == "1dpa")
 dpa2 <- subset(x = endo_apln, subset = timepoint == "2dpa")
@@ -141,3 +159,36 @@ dpa7 <- RunUMAP(dpa7, dims = 1:20)
 # Arrange in 2 plots per column
 dpa0dimplot + dpa1dimplot + dpa2dimplot + dpa3dimplot + dpa7dimplot + 
   plot_layout(ncol = 2)
+
+# plot the count within each cluster number overtime ----
+get_cluster_counts <- function(obj, timepoint_label) {
+  data.frame(cluster = Idents(obj)) %>%
+    count(cluster) %>%
+    mutate(timepoint = timepoint_label)
+}
+
+df_counts <- bind_rows(
+  get_cluster_counts(mock, "mock"),
+  get_cluster_counts(dpa0, "0dpa"),
+  get_cluster_counts(dpa1, "1dpa"),
+  get_cluster_counts(dpa2, "2dpa"),
+  get_cluster_counts(dpa3, "3dpa"),
+  get_cluster_counts(dpa7, "7dpa")
+)
+
+df_counts <- rbind(
+  df_counts,
+  data.frame(cluster = "1", timepoint = "7dpa", n = 0)
+)
+
+
+# keep timepoint ordering consistent
+df_counts$cluster <- factor(df_counts$cluster, levels = sort(unique(df_counts$cluster)))
+
+# plot
+x <- ggplot(df_counts, aes(x = timepoint, y = n, fill = cluster)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Timepoint", y = "Number of Cells", fill = "Cluster") +
+  theme_minimal()
+
+x | y
