@@ -1,9 +1,11 @@
 library(Seurat)
 library(ggplot2)
 library(viridis)
+library(dplyr)
+library(tidyverse)
         
 # load in the seurat obj
-file_path <- '/Users/sophiemarcotte/Desktop/20211217_zf.mtz2.3.cell.types.Robj'
+file_path <- '/Users/sm2949/Desktop/20211217_zf.mtz2.3.cell.types.Robj'
 load(file_path)
 
 # okabe-Ito palette extended to 12 colors
@@ -19,6 +21,8 @@ umap <- UMAPPlot(zf) +
 
 # plot gene expression in UMAP
 feature <- FeaturePlot(zf, features = c("lima1a"))
+
+VlnPlot(zf, features = c('uhrf1'), group.by = 'cell.type.12.long')
 
 # plot side by side
 umap | feature
@@ -77,6 +81,7 @@ if (length(significant_cell_types) > 0) {
 }
 
 # ------------- plotting cell type proportions across timepoints ------------------ #
+dim <- DimPlot(zf, cols = custom)
 # create a custom color pallete
 custom <- c(
   "#011a51",
@@ -103,7 +108,7 @@ cell_counts <- metadata %>%
   ungroup()
 
 # stacked bar chart 
-ggplot(cell_counts, aes(x = timepoint, y = cell_count, fill = cell.type.12.long)) +
+stack <- ggplot(cell_counts, aes(x = timepoint, y = cell_count, fill = cell.type.12.long)) +
   geom_bar(stat = "identity", position = "fill") +  # Stacked proportions
   labs(
     title = "Cell Type Proportions Across Timepoints",
@@ -123,3 +128,30 @@ ggplot(cell_counts, aes(x = timepoint, y = cell_count, fill = cell.type.12.long)
     plot.title = element_text(hjust = 0.5, size = 18, face = "bold")  # Larger plot title
   )
 
+dim | stack
+
+# ------------------------------- plotting cell type count ------------------------------ #
+# count number of cells per cell type
+cell_counts <- zf@meta.data %>%
+  count(cell.type.12.long) %>%
+  arrange(desc(n))
+
+# car plot
+ggplot(cell_counts, aes(x = reorder(cell.type.12.long, n), y = n, fill = cell.type.12.long)) +
+  geom_bar(stat = "identity", width = 0.7) +
+  geom_text(aes(label = n), vjust = -0.3, size = 4.5) +  # add cell counts above bars
+  scale_fill_viridis_d(option = "D", direction = -1) +  # colorblind-friendly discrete palette
+  labs(
+    title = "Number of Cells per Cell Type",
+    x = "Cell Type",
+    y = "Cell Count",
+    fill = "Cell Type"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 16),
+    axis.title = element_text(face = "bold", size = 14),
+    legend.position = "none"  # hide legend
+  ) +
+  ylim(0, max(cell_counts$n) * 1.1)  # add space above bars for labels
