@@ -70,7 +70,7 @@ bec <- RunUMAP(bec, dims = 1:20)
 x <- DimPlot(bec, reduction = "umap", group.by = "timepoint")
 DimPlot(bec, reduction = "umap")
 
-y <- FeaturePlot(bec, features = 'prox1a')
+FeaturePlot(bec, features = 'uhrf1')
 
 x|y
 
