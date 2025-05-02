@@ -16,7 +16,7 @@ Idents(zf_filtered) <- zf_filtered$cell.type.12.long
 
 # filter for ECM producing cells
 bec_subset <- subset(zf_filtered, idents = c("Biliary Epithelial Cell"), 
-                     subset = timepoint %in% c("untreated", "mock", "0dpa", "7dpa") == FALSE)
+                     subset = timepoint %in% c("untreated", "mock", "0dpa", "1dpa", "7dpa") == FALSE)
 
 hep_subset <- subset(zf_filtered, idents = c("Hepatocyte"), 
                      subset = timepoint %in% c("untreated", "mock", "0dpa", "1dpa", "7dpa") == FALSE)

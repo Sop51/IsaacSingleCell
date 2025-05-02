@@ -19,7 +19,9 @@ endo_apln <- FindClusters(endo_apln, resolution = 0.2)
 endo_apln <- RunUMAP(endo_apln, dims = 1:30)
 y <- DimPlot(endo_apln, reduction = "umap")
 
-# break into timepoints
+VlnPlot(endo_apln, features = c("apln"), group.by = "timepoint")
+
+65y# break into timepoints
 mock <- subset(x = endo_apln, subset = timepoint == "mock")
 dpa0 <- subset(x = endo_apln, subset = timepoint == "0dpa")
 dpa1 <- subset(x = endo_apln, subset = timepoint == "1dpa")
