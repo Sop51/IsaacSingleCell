@@ -83,15 +83,31 @@ sources.use = c("Macrophage")
 targets.use = c("Biliary Epithelial Cell")
 cellchat <- aggregateNet(cellchat, sources.use = sources.use, targets.use = targets.use)
 
-# save results as an rds 
+# save results as an rds ----
 saveRDS(cellchat, file = "cellchat_mac_bec_z.rds")
 
-# look at the signaling pathways 
+# look at the signaling pathways  ----
 pathways.show.all <- cellchat@netP$pathways
-pathways.show <- c("MIF")
+pathways.show <- c("NOTCH")
 
-netVisual_heatmap(cellchat, signaling = pathways.show, color.heatmap = "Reds")
+# macrophage ----
+netVisual_bubble(cellchat, sources.use = 4, targets.use = c(1:11), remove.isolate = FALSE)
 
-pairLR.MIF <- extractEnrichedLR(cellchat, signaling = pathways.show, geneLR.return = FALSE)
-LR.show <- pairLR.MIF[1,]
+# endothelial cells ----
+netVisual_bubble(cellchat, sources.use = 3, targets.use = c(1:11), remove.isolate = FALSE)
+
+# hepatocyte cells ----
+netVisual_bubble(cellchat, sources.use = 1, targets.use = c(1:11), remove.isolate = FALSE)
+
+# biliary epithelial cell ----
+netVisual_bubble(cellchat, sources.use = 2, targets.use = c(1:11), remove.isolate = FALSE)
+
+# looking at a specific pathway
+netVisual_aggregate(cellchat, signaling = pathways.show, layout = "circle", color.use = NULL, sources.use = NULL, targets.use = NULL, idents.use = NULL)
+
+pairLR.NOTCH <- extractEnrichedLR(cellchat, signaling = pathways.show, geneLR.return = FALSE)
+LR.show <- pairLR.NOTCH[5,]
 netVisual_individual(cellchat, signaling = pathways.show, pairLR.use = LR.show, layout = "circle")
+
+genes.use <- extractEnrichedLR(cellchat, signaling = "NOTCH", geneLR.return = TRUE)$geneLR
+Seurat::VlnPlot(zf, features = genes.use)
