@@ -41,14 +41,13 @@ Idents(zf) <- zf@meta.data$cell.type.12.long
 
 # ------------------- PREPARE DATA TO RUN ------------------------ #
 # online data
-ad <- read_h5ad("/Users/sophiemarcotte/Desktop/GSE272484_CellCousin_final.h5ad")
+ad <- read_h5ad("/Users/sm2949/Downloads/GSE272484_CellCousin_final.h5ad")
 counts <- t(as.matrix(ad$X))
 data.input <- normalizeData(counts)
 meta <- ad$obs
 meta$labels <- meta[["anno6"]]
 
 # pull out counts matrix and prepare the metadata ----
-zf <- NormalizeData(zf)
 labels <- Idents(zf)
 data.input <- zf[["RNA"]]@data
 meta <- data.frame(labels = labels, row.names = names(labels))
@@ -88,12 +87,21 @@ cellchat <- computeCommunProbPathway(cellchat)
 
 # calculate the aggregated cell-cell communication level (two cell types here) ----
 cellchat <- aggregateNet(cellchat)
-#sources.use = c("Macrophage")
-#targets.use = c("Biliary Epithelial Cell")
-#cellchat <- aggregateNet(cellchat, sources.use = sources.use, targets.use = targets.use)
+sources.use = c("Macrophages")
+targets.use = c("Cholangiocytes-Control", "Endothelial", "HSCs")
+cellchat <- aggregateNet(cellchat, sources.use = sources.use, targets.use = targets.use)
 
 # save results as an rds ----
 saveRDS(cellchat, file = "cellchat_GSE272484.rds")
+
+# do some visualization ----
+groupSize <- as.numeric(table(cellchat@idents))
+mat <- cellchat@net$weight
+for (i in 1:nrow(mat)) {
+  mat2 <- matrix(0, nrow = nrow(mat), ncol = ncol(mat), dimnames = dimnames(mat))
+  mat2[i, ] <- mat[i, ]
+  netVisual_circle(mat2, vertex.weight = groupSize, weight.scale = T, edge.weight.max = max(mat), title.name = rownames(mat)[i])
+}
 
 # look at the signaling pathways  ----
 pathways.show.all <- cellchat@netP$pathways
@@ -115,8 +123,51 @@ netVisual_bubble(cellchat, sources.use = 2, targets.use = c(1:11), remove.isolat
 netVisual_aggregate(cellchat, signaling = pathways.show, layout = "circle", color.use = NULL, sources.use = NULL, targets.use = NULL, idents.use = NULL)
 
 pairLR.NOTCH <- extractEnrichedLR(cellchat, signaling = pathways.show, geneLR.return = FALSE)
-LR.show <- pairLR.NOTCH[4,]
+LR.show <- pairLR.NOTCH[2,]
 netVisual_individual(cellchat, signaling = pathways.show, pairLR.use = LR.show, layout = "circle")
 
 genes.use <- extractEnrichedLR(cellchat, signaling = "JAM", geneLR.return = TRUE)$geneLR
 Seurat::VlnPlot(zf, features = genes.use)
+
+# identify signaling roles (dominant senders and recievers) ----
+cellchat <- netAnalysis_computeCentrality(cellchat, slot.name = "netP")
+pathways.show <- c("TIGIT")
+netAnalysis_signalingRole_network(cellchat, signaling = pathways.show, width = 8, height = 2.5, font.size = 10)
+
+# global communication patterns ----
+selectK(cellchat, pattern = "outgoing")
+nPatterns = 3
+cellchat <- identifyCommunicationPatterns(cellchat, pattern = "outgoing", k = nPatterns)
+netAnalysis_river(cellchat, pattern = "outgoing")
+netAnalysis_dot(cellchat, pattern = "outgoing")
+
+selectK(cellchat, pattern = "incoming")
+nPatterns = 3
+cellchat <- identifyCommunicationPatterns(cellchat, pattern = "incoming", k = nPatterns)
+netAnalysis_river(cellchat, pattern = "incoming")
+netAnalysis_dot(cellchat, pattern = "incoming")
+
+# try some manual lookups
+ligands <- read_excel('/Users/sm2949/Desktop/sigmeta.xlsx')
+ligands_z <- left_join(ligands, mapping, by = c("Ligand" = "human_gene"))
+mac_1_ligands <- sig_genes_t1[rownames(sig_genes_t1) %in% ligands_z$zebrafish_gene, ]
+mac_2_ligands <- sig_genes_t2[rownames(sig_genes_t2) %in% ligands_z$zebrafish_gene, ]
+
+# pull out receptors expressed by BECs @ 1+2pda
+receptors <- read.csv('/Users/sm2949/Desktop/receptors.txt', sep='\t')
+receptors_z <- mapping[mapping$human_gene %in% receptors$Hgnc.Symbol, ]
+bil_1_receptors <- sig_genes_t1_bil[rownames(sig_genes_t1_bil) %in% receptors_z$zebrafish_gene, ]
+bil_2_receptors <- sig_genes_t2_bil[rownames(sig_genes_t2_bil) %in% receptors_z$zebrafish_gene, ]
+
+library(clusterProfiler)
+library(org.Dr.eg.db)
+library(enrichplot)
+entrez_ids <- bitr(rownames(sig_genes_t2), fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Dr.eg.db")
+kegg_enrich <- enrichKEGG(gene = entrez_ids$ENTREZID,
+                          organism = "dre", # zebrafish
+                          pvalueCutoff = 0.05)
+go_enrich <- enrichGO(gene = entrez_ids$ENTREZID,
+                      OrgDb = org.Dr.eg.db,
+                      ont = "BP", # Biological Process
+                      pvalueCutoff = 0.05)
+go_results <- as.data.frame(go_enrich@result)
