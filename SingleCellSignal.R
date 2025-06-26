@@ -1,6 +1,8 @@
 library(biomaRt)
 library(CellChat)
 library(Seurat)
+library(anndata)
+library(zellkonverter)
 
 # ----------------- MAP SEURAT OBJ TO HUMAN ORTHOLOGS ---------------- #
 # initally need to convert to human orthologs ----
@@ -38,6 +40,13 @@ DefaultAssay(zf) <- "RNA_human"
 Idents(zf) <- zf@meta.data$cell.type.12.long
 
 # ------------------- PREPARE DATA TO RUN ------------------------ #
+# online data
+ad <- read_h5ad("/Users/sophiemarcotte/Desktop/GSE272484_CellCousin_final.h5ad")
+counts <- t(as.matrix(ad$X))
+data.input <- normalizeData(counts)
+meta <- ad$obs
+meta$labels <- meta[["anno6"]]
+
 # pull out counts matrix and prepare the metadata ----
 zf <- NormalizeData(zf)
 labels <- Idents(zf)
@@ -68,7 +77,7 @@ cellchat <- identifyOverExpressedInteractions(cellchat)
 # cellchat <- smoothData(cellchat, adj = PPI.zebrafish) no zebrafish :(
 
 # infer cell-cell communication at a L-R pair level ----
-cellchat <- computeCommunProb(cellchat, type = "truncatedMean", trim = 0.05,
+cellchat <- computeCommunProb(cellchat, type = "triMean",
                               raw.use = TRUE) 
 
 # filter the cell-cell communication based on the number of cells in each group (10 min) ----
@@ -78,20 +87,20 @@ cellchat <- filterCommunication(cellchat, min.cells = 10)
 cellchat <- computeCommunProbPathway(cellchat)
 
 # calculate the aggregated cell-cell communication level (two cell types here) ----
-#cellchat <- aggregateNet(cellchat)
-sources.use = c("Macrophage")
-targets.use = c("Biliary Epithelial Cell")
-cellchat <- aggregateNet(cellchat, sources.use = sources.use, targets.use = targets.use)
+cellchat <- aggregateNet(cellchat)
+#sources.use = c("Macrophage")
+#targets.use = c("Biliary Epithelial Cell")
+#cellchat <- aggregateNet(cellchat, sources.use = sources.use, targets.use = targets.use)
 
 # save results as an rds ----
-saveRDS(cellchat, file = "cellchat_mac_bec_z.rds")
+saveRDS(cellchat, file = "cellchat_GSE272484.rds")
 
 # look at the signaling pathways  ----
 pathways.show.all <- cellchat@netP$pathways
-pathways.show <- c("NOTCH")
+pathways.show <- c("JAM")
 
 # macrophage ----
-netVisual_bubble(cellchat, sources.use = 4, targets.use = c(1:11), remove.isolate = FALSE)
+netVisual_bubble(cellchat, sources.use = 21, targets.use = c(1:21), remove.isolate = FALSE)
 
 # endothelial cells ----
 netVisual_bubble(cellchat, sources.use = 3, targets.use = c(1:11), remove.isolate = FALSE)
@@ -106,8 +115,8 @@ netVisual_bubble(cellchat, sources.use = 2, targets.use = c(1:11), remove.isolat
 netVisual_aggregate(cellchat, signaling = pathways.show, layout = "circle", color.use = NULL, sources.use = NULL, targets.use = NULL, idents.use = NULL)
 
 pairLR.NOTCH <- extractEnrichedLR(cellchat, signaling = pathways.show, geneLR.return = FALSE)
-LR.show <- pairLR.NOTCH[5,]
+LR.show <- pairLR.NOTCH[4,]
 netVisual_individual(cellchat, signaling = pathways.show, pairLR.use = LR.show, layout = "circle")
 
-genes.use <- extractEnrichedLR(cellchat, signaling = "NOTCH", geneLR.return = TRUE)$geneLR
+genes.use <- extractEnrichedLR(cellchat, signaling = "JAM", geneLR.return = TRUE)$geneLR
 Seurat::VlnPlot(zf, features = genes.use)
